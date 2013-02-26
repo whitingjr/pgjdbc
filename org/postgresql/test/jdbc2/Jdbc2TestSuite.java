@@ -90,6 +90,9 @@ public class Jdbc2TestSuite extends TestSuite
         suite.addTestSuite(LoginTimeoutTest.class);
         suite.addTestSuite(TestACL.class);
         
+        // partition table tests
+        suite.addTestSuite(PartitionedTableTest.class);
+        
         Connection conn = TestUtil.openDB();
         if (TestUtil.isProtocolVersion(conn, 3)) {
             suite.addTestSuite(CopyTest.class);

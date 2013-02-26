@@ -263,7 +263,108 @@ public class TestUtil
             st.close();
         }
     }
+    /**
+     * Helper method to create a dependent table that inherits.
+     * @param con Connection object
+     * @param String table name
+     * @param String inherited table name
+     * @throws SQLException Exception message
+     */
+    public static void createInheritedTable( Connection con,
+            String table, String inheritedName) 
+        throws SQLException
+    {
+        Statement st = con.createStatement();
+        try
+        {
+            // Drop the table
+            dropTable(con, table);
 
+            // Now create the table
+            st.executeUpdate(String.format("create table %1$s () inherits ( %2$s )", table, inheritedName));
+        }
+        finally
+        {
+            if (null != st)
+            {
+                st.close();
+            }
+        }
+    }
+    
+    /**
+     * Helper method to create a function.
+     * @param con Connection object
+     * @param name String Name of the function
+     * @param body String Body of the function
+     * @throws SQLException Exception message
+     */
+    public static void createFunction(Connection con,
+            String name, String body)
+        throws SQLException
+    {
+        Statement st = con.createStatement();
+        try
+        {
+            // Now create the function
+            st.executeUpdate(String.format("create or replace function %1$s() returns trigger as $$ begin %2$s end; $$ language plpgsql;", name, body));
+        }
+        finally
+        {
+            if (null != st)
+            {
+                st.close();
+            }
+        }
+    }
+    /**
+     * Helper method to create a trigger.
+     * @param con Connection object.
+     * @param name String Name of trigger
+     * @param body String Body of trigger.
+     * @throws SQLException
+     */
+    public static void createTrigger(Connection con,
+            String name, String body)
+        throws SQLException
+    {
+        Statement st = con.createStatement();
+        try
+        {
+            // Now create the trigger
+            st.executeUpdate(String.format("CREATE TRIGGER %1$s %2$s ", name, body));
+        }
+        finally
+        {
+            if (null != st)
+            {
+                st.close();
+            }
+        }
+    }
+    
+    /**
+     * Helper method to drop a function. 
+     * @param con Connection Connection object.
+     * @param function String Name of function.
+     * @throws SQLException Exception object.
+     */
+    public static void dropFunction(Connection con, String function)
+        throws SQLException
+    {
+        Statement stmt = con.createStatement();
+        try
+        {
+            stmt.executeUpdate(String.format("drop function if exists %1$s", function));
+        }
+        finally
+        {
+            if (null != stmt)
+            {
+                stmt.close();
+            }
+        }
+    }
     /*
      * drop a sequence because older versions don't have dependency
      * information for serials
@@ -306,6 +407,28 @@ public class TestUtil
             // transaction then we've got trouble
             if (!con.getAutoCommit())
                 throw ex;
+        }
+    }
+    /**
+     * Helper method to drop a trigger.
+     * @param con Connection Connection object.
+     * @param trigger String Name of trigger.
+     * @param table String Name of table.
+     * @return SQLException Exception message.
+     */
+    public static void dropTrigger(Connection con, String trigger, String table) throws SQLException
+    {
+        Statement stmt = con.createStatement();
+        try
+        {
+            stmt.executeUpdate(String.format("drop trigger if exists %1$s on %2$s", trigger, table));
+        }
+        finally
+        {
+            if (null != stmt)
+            {
+                stmt.close();
+            }
         }
     }
 
