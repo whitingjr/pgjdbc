@@ -308,5 +308,33 @@ public class BatchExecuteTest extends TestCase
         rs.close();
         stmt.close();
     }
-
+    
+    /**
+     * Test case to make sure the update counter is correct for the
+     * one statement executed.
+     * @throws SQLException
+     */
+    public void testBatchWithMultiInsert() throws SQLException {
+       PreparedStatement pstmt = null;
+       try {
+           pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?),(?,?)");
+           pstmt.setInt(1, 1);
+           pstmt.setInt(2, 1);
+           pstmt.setInt(3, 2);
+           pstmt.setInt(4, 2);
+           pstmt.addBatch();//statement one
+           int[] outcome = pstmt.executeBatch();
+           assertNotNull(outcome);
+           assertEquals(1, outcome.length);
+           assertEquals(2, outcome[0]);
+           /* for some reason unknown the rows affected does not match the update count.
+            * TODO: fix it. */
+           assertEquals(outcome[0], pstmt.getUpdateCount());
+       } catch (SQLException sqle) {
+          fail ("Failed to execute two statements added to a batch.");
+       } finally {
+          if (null != pstmt) {pstmt.close();}
+          con.rollback();
+       }
+    }
 }
