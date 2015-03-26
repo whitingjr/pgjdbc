@@ -310,6 +310,34 @@ public class BatchExecuteTest extends TestCase
     }
     
     /**
+     * Check batching using two individual statements that are both the same type.
+     * @throws SQLException
+     */
+    public void testBatchWithRepeatedInsertStatement() throws SQLException {
+       PreparedStatement pstmt = null;
+       try {
+           pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+           pstmt.setInt(1, 1);
+           pstmt.setInt(2, 1);
+           pstmt.addBatch(); //statement one
+           pstmt.setInt(1, 2);
+           pstmt.setInt(2, 2);
+           pstmt.addBatch();//statement two
+           int[] outcome = pstmt.executeBatch();
+           assertNotNull(outcome);
+           assertEquals(2, outcome.length);
+           assertEquals(1, outcome[0]);
+           assertEquals(1, outcome[1]);
+           assertEquals(2, pstmt.getUpdateCount()  );
+       } catch (SQLException sqle) {
+          fail ("Failed to execute two statements added to a batch.");
+       } finally {
+          if (null != pstmt) {pstmt.close();}
+          con.rollback();
+       }
+    }
+    
+    /**
      * Test case to make sure the update counter is correct for the
      * one statement executed.
      * @throws SQLException
