@@ -314,27 +314,29 @@ public class BatchExecuteTest extends TestCase
      * @throws SQLException
      */
     public void testBatchWithRepeatedInsertStatement() throws SQLException {
-       PreparedStatement pstmt = null;
-       try {
-           pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
-           pstmt.setInt(1, 1);
-           pstmt.setInt(2, 1);
-           pstmt.addBatch(); //statement one
-           pstmt.setInt(1, 2);
-           pstmt.setInt(2, 2);
-           pstmt.addBatch();//statement two
-           int[] outcome = pstmt.executeBatch();
-           assertNotNull(outcome);
-           assertEquals(2, outcome.length);
-           assertEquals(1, outcome[0]);
-           assertEquals(1, outcome[1]);
-           assertEquals(2, pstmt.getUpdateCount()  );
-       } catch (SQLException sqle) {
-          fail ("Failed to execute two statements added to a batch.");
-       } finally {
-          if (null != pstmt) {pstmt.close();}
-          con.rollback();
-       }
+        PreparedStatement pstmt = null;
+       
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.addBatch(); //statement one
+            pstmt.setInt(1, 2);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();//statement two
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(1, outcome[0]);
+            assertEquals(1, outcome[1]);
+            // compare the batch count with the result set count.
+            assertEquals(2, pstmt.getUpdateCount() );
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch.");
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
     }
     
     /**
@@ -343,26 +345,27 @@ public class BatchExecuteTest extends TestCase
      * @throws SQLException
      */
     public void testBatchWithMultiInsert() throws SQLException {
-       PreparedStatement pstmt = null;
-       try {
-           pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?),(?,?)");
-           pstmt.setInt(1, 1);
-           pstmt.setInt(2, 1);
-           pstmt.setInt(3, 2);
-           pstmt.setInt(4, 2);
-           pstmt.addBatch();//statement one
-           int[] outcome = pstmt.executeBatch();
-           assertNotNull(outcome);
-           assertEquals(1, outcome.length);
-           assertEquals(2, outcome[0]);
-           /* for some reason unknown the rows affected does not match the update count.
-            * TODO: fix it. */
-           assertEquals(outcome[0], pstmt.getUpdateCount());
-       } catch (SQLException sqle) {
-          fail ("Failed to execute two statements added to a batch.");
-       } finally {
-          if (null != pstmt) {pstmt.close();}
-          con.rollback();
-       }
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?),(?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.setInt(3, 2);
+            pstmt.setInt(4, 2);
+            pstmt.addBatch();//statement one
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(1, outcome.length);
+            assertEquals(2, outcome[0]);
+            /* The next assertion checks if the update count for the result
+             * set matches the executed batch.
+             */
+            assertEquals(outcome[0], pstmt.getUpdateCount());
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch.");
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
     }
 }
