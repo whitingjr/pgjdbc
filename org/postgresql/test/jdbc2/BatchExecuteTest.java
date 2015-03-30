@@ -436,5 +436,124 @@ public class BatchExecuteTest extends TestCase
             ex.getNextException().printStackTrace();
             throw ex;
     	}
+    
+    /**
+     * Check batching using two individual statements that are both the same type.
+     * Test coverage to check default behaviour is not broken.
+     * @throws SQLException
+     */
+    public void testBatchWithRepeatedInsertStatement() throws SQLException {
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.addBatch(); //statement one
+            pstmt.setInt(1, 2);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();//statement two
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(1, outcome[0]);
+            assertEquals(1, outcome[1]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch.");
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
     }
+    
+    /**
+     * Check batching using two individual statements that are both the same type.
+     * Test to check the re-write optimization behaviour.
+     * @throws SQLException
+     */
+    public void testBatchWithReWrittenRepeatedInsertStatement() throws SQLException {
+        PreparedStatement pstmt = null;
+        //TODO: set configuration property for batch re-write
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.addBatch(); //statement one
+            pstmt.setInt(1, 2);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();//statement two, this should be collapsed into prior statement
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(1, outcome.length);
+            assertEquals(2, outcome[0]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch.");
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    }
+    
+    /**
+     * 
+     */
+    
+    /**
+    * Test case to make sure the update counter is correct for the
+    * one statement executed. Test coverage to check default behaviour is 
+    * not broken.
+    * @throws SQLException
+    */
+    public void testBatchWithMultiInsert() throws SQLException {
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?),(?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.setInt(3, 2);
+            pstmt.setInt(4, 2);
+            pstmt.addBatch();//statement one
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(1, outcome.length);
+            assertEquals(2, outcome[0]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch.");
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    }
+    
+    /**
+     * Test case to make sure the update counter is correct for the
+     * two statements executed. Test coverage to check default behaviour is 
+     * not broken.
+     * @throws SQLException
+     */
+    public void testBatchWithMultiStatementPS() throws SQLException {
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?),(?,?);SELECT pk FROM testbatch WHERE (pk=?);");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.setInt(3, 2);
+            pstmt.setInt(4, 2);
+            pstmt.setInt(5, 1);
+            pstmt.addBatch();//statement one and two rolled into one addBatch
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(2, outcome[0]); // two rows inserted
+            assertEquals(1, outcome[1]); // one row found
+            assertEquals(1, pstmt.getUpdateCount()); // one row in resultset
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    }
+
 }
