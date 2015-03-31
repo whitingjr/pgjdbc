@@ -271,7 +271,7 @@ public enum PGProperty
     HOST_RECHECK_SECONDS("hostRecheckSeconds", "10", "Specifies period (seconds) after host statuses are checked again in case they have changed"),
     
     /**
-     *  
+     * Configure optimization to enable batch insert re-writing.
      */
     REWRITE_BATCHED_INSERTS ("reWriteBatchedInserts", "false", "Enable optimization to rewrite and collapse compatible INSERT statements that are batched.");
 

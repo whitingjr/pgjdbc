@@ -185,6 +185,41 @@ public class Parser {
     }
 
     /**
+     * Parse string to find the end of the INSERT keyword.
+     * Assume char at pos offset is already an i/I.
+     * @return int end position of the word insert in the query
+     */
+    public static int parseInsertKeyword(final char[] query, int offset, boolean upper) {
+        int endPos = -1;
+        
+        if (upper && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
+            endPos = offset + 6;
+        }
+        else if ( !upper && query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
+            endPos = offset + 6;
+        }
+        return endPos;
+    }
+    
+    /**
+     * 
+     * @param query char[] of the query statement
+     * @param offset position of query to start checking
+     * @param upper is the text expected to be upper/lower case
+     * @return
+     */
+    public static boolean parseReturningKeyword(final char[] query, int offset, boolean isUpper) {
+        boolean present = false;
+        if (isUpper && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
+            present = true;
+        }
+        else if ( query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
+            present = false;
+        }
+        return present;
+    }
+    
+    /**
      * unmark '??' in query back to '?'
      * @param query
      * @param standardConformingStrings
