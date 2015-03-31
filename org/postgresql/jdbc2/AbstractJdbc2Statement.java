@@ -48,6 +48,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     protected final int concurrency;   // is it updateable or not?     (ResultSet.CONCUR_xxx)
     protected int fetchdirection = ResultSet.FETCH_FORWARD;  // fetch direction hint (currently ignored)
     private volatile TimerTask cancelTimerTask = null;
+    private String priorInsert = null; // anything other than a immediate prior rewriteable insert statement will be null  
 
     /**
      * Does the caller of execute/executeUpdate want generated keys for this
@@ -3016,16 +3017,30 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     public void addBatch() throws SQLException
     {
         checkClosed();
-
+        Candidate collapsable = null;
         if (batchStatements == null)
         {
             batchStatements = new ArrayList();
             batchParameters = new ArrayList();
         }
+        /*else //parsing here might not be the right place
+        {
+            collapsable = parse(batchStatements, preparedQuery);
+        }*/
 
-        // we need to create copies of our parameters, otherwise the values can be changed
-        batchStatements.add(preparedQuery);
-        batchParameters.add(preparedParameters.copy());
+        if (null == collapsable)
+        {
+            // we need to create copies of our parameters, otherwise the values can be changed
+            batchStatements.add(preparedQuery);
+            batchParameters.add(preparedParameters.copy());
+            priorInsert = null;
+        }
+        /*else
+        {
+            //TODO: rewrite, maybe
+            //rewrite(collapsable, batchStatements, preparedQuery, preparedParameters);
+            priorInsert = collapsable.getSQL();
+        }*/
     }
 
     public ResultSetMetaData getMetaData() throws SQLException
@@ -3520,5 +3535,26 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     protected boolean getForceBinaryTransfer()
     {
         return forceBinaryTransfers;        
+    }
+    
+    private Candidate parse(ArrayList batchStatements, Query preparedQuery) 
+    {
+        //String trimmed = preparedQuery.
+        return null;
+    }
+    private class Candidate 
+    {
+        /* This will be everything between INSERT and VALUES reserved wordS. */
+        private String allAfterInsert;
+        private int insertKeywordEndPos = -1;
+        private int valuesKeywordStartPos = -1;
+        
+        String getSQL()
+        {
+            return this.allAfterInsert;
+        }
+        
+        
+        
     }
 }
