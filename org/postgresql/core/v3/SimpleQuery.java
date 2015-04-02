@@ -27,6 +27,12 @@ class SimpleQuery implements V3Query {
         this.fragments = unmarkDoubleQuestion(fragments, protoConnection);
         this.protoConnection = protoConnection;
     }
+    
+    SimpleQuery(String[] fragments, ProtocolConnectionImpl protoConnection, boolean isReWritable)
+    {
+        this(fragments, protoConnection);
+        this.statementReWritableInsert = isReWritable;
+    }
 
     public ParameterList createParameterList() {
         if (fragments.length == 1)
@@ -240,8 +246,47 @@ class SimpleQuery implements V3Query {
         statementDescribed = false;
         cachedMaxResultRowSize = null;
     }
+    
+    @Override
+    public boolean isStatementReWritableInsert() {
+        return false;
+    }
+    public void setStatementReWritableInsert(boolean isReWriteable) {
+        this.statementReWritableInsert = isReWriteable;
+        if (isReWriteable) {
+            /* compute a hashcode for the initial sql fragment.
+             * Allowing a quicker comparison of SimpleQuery objects. */
+        }
+    }
+    @Override
+    public boolean equals(Object obj) {
+        // TODO Auto-generated method stub
+        return super.equals(obj);
+    }
+    @Override
+    public int hashCode() {
+        // TODO Auto-generated method stub
+        return super.hashCode();
+    }
+    
+    @Override
+    public void addQueryFragments(String[] additional) {
+        additional = unmarkDoubleQuestion(additional, this.protoConnection);
+        String[] replacement = new String[this.fragments.length + additional.length];
+        int pos = 0;
+        for (int i = 0; i < this.fragments.length ; i += 1) {
+            replacement[i] = this.fragments[i];
+            pos += 1;
+        }
+        int end = this.fragments.length + additional.length + 1;
+        for (int i = 0; i < additional.length ; i += 1) {
+            replacement[pos] = additional[i];
+            pos += 1;
+        }
+        this.fragments = replacement;
+    }
 
-    private final String[] fragments;
+    private String[] fragments;
     private final ProtocolConnectionImpl protoConnection;
     private String statementName;
     private byte[] encodedStatementName;
@@ -258,6 +303,8 @@ class SimpleQuery implements V3Query {
     private Integer cachedMaxResultRowSize;
 
     final static SimpleParameterList NO_PARAMETERS = new SimpleParameterList(0, null);
+    
+    boolean statementReWritableInsert = false;
 }
 
 

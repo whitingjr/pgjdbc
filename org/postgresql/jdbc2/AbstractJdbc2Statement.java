@@ -25,6 +25,7 @@ import org.postgresql.Driver;
 import org.postgresql.largeobject.*;
 import org.postgresql.core.*;
 import org.postgresql.core.types.*;
+import org.postgresql.core.v3.SimpleQuery;
 import org.postgresql.util.ByteConverter;
 import org.postgresql.util.HStoreConverter;
 import org.postgresql.util.PGBinaryObject;
@@ -3017,30 +3018,25 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     public void addBatch() throws SQLException
     {
         checkClosed();
-        Candidate collapsable = null;
         if (batchStatements == null)
         {
             batchStatements = new ArrayList();
             batchParameters = new ArrayList();
-        }
-        /*else //parsing here might not be the right place
-        {
-            collapsable = parse(batchStatements, preparedQuery);
-        }*/
-
-        if (null == collapsable)
-        {
             // we need to create copies of our parameters, otherwise the values can be changed
             batchStatements.add(preparedQuery);
             batchParameters.add(preparedParameters.copy());
-            priorInsert = null;
+            return;
         }
-        /*else
-        {
-            //TODO: rewrite, maybe
-            //rewrite(collapsable, batchStatements, preparedQuery, preparedParameters);
-            priorInsert = collapsable.getSQL();
-        }*/
+
+        Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
+        if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
+            reWrite(batchStatements, batchParameters, preparedParameters);
+        }
+        else {
+            // we need to create copies of our parameters, otherwise the values can be changed
+            batchStatements.add(preparedQuery);
+            batchParameters.add(preparedParameters.copy());
+        }
     }
 
     public ResultSetMetaData getMetaData() throws SQLException
@@ -3537,24 +3533,20 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         return forceBinaryTransfers;        
     }
     
-    private Candidate parse(ArrayList batchStatements, Query preparedQuery) 
-    {
-        //String trimmed = preparedQuery.
-        return null;
-    }
-    private class Candidate 
-    {
-        /* This will be everything between INSERT and VALUES reserved wordS. */
-        private String allAfterInsert;
-        private int insertKeywordEndPos = -1;
-        private int valuesKeywordStartPos = -1;
-        
-        String getSQL()
-        {
-            return this.allAfterInsert;
-        }
-        
-        
+    /**
+     * Use this method to rewrite the prior Query sql with additional 
+     * paramaterized fields. Add parameters of the current list to prior. 
+     * @param priorQuery
+     * @param currentQuery
+     * @param priorParameters
+     * @param currentParameters
+     */
+    private ParameterList reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
+        Query prior = (Query)batchStatements.remove(batchStatements.size()-1);
+        int sizeBeforehand = prior.createParameterList().getInParameterCount();
+        prior.addQueryFragments();
+        ParameterList replacement = prior.createParameterList();
+        r
         
     }
 }

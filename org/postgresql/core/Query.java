@@ -56,4 +56,13 @@ public interface Query {
     boolean isStatementDescribed();
 
     boolean isEmpty();
+    
+    /**
+     * Convenience to check if the Query has an insert statement
+     * that can be re-written.
+     */
+    boolean isStatementReWritableInsert();
+    
+    void addQueryFragments(String[] fragments);
+
 }

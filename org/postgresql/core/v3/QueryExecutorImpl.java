@@ -12,6 +12,7 @@ import org.postgresql.PGProperty;
 import org.postgresql.core.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Properties;
@@ -120,9 +121,8 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         int fragmentStart = 0;
         int inParen = 0;
-        boolean isPriorAnInsert = false;
-        int insEndPos = -1;
-        int parameterCount = 0;
+        boolean isCurrentReWriteCompatible = false;
+        int paramCount = 0;
 
         boolean standardConformingStrings = protoConnection.getStandardConformingStrings();
         
@@ -171,9 +171,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                         fragmentStart = i + 1;
                     }
                 }
-                if (insEndPos != -1) {
-                     parameterCount += 1;
-                }
+                paramCount += 1;
                 break;
 
             case ';':
@@ -183,51 +181,26 @@ public class QueryExecutorImpl implements QueryExecutor {
                     fragmentStart = i + 1;
                     if (fragmentList.size() > 1 || ((String)fragmentList.get(0)).trim().length() > 0)
                     {
-                        if (insEndPos != -1 ) { //current is an insert
-                             String priorInitialFragment = ((String[])statementList.get(statementList.size()-1))[0];
-                             if ( isPriorAnInsert && ((String)fragmentList.get(0)).equalsIgnoreCase((priorInitialFragment)) ) {
-                                 //re-write
-                             } else {
-                                 statementList.add(new InsertStatementWrapper((String[])fragmentList.toArray(new String[fragmentList.size()]), parameterCount));
-                             }
-                             isPriorAnInsert = true;
-                        }
-                        else {
-                            statementList.add(fragmentList.toArray(new String[fragmentList.size()]));
-                            isPriorAnInsert = false;
-                        }
+                        statementList.add(fragmentList.toArray(new String[fragmentList.size()]));
                     }
                     fragmentList.clear();
-                    if (insEndPos != -1) {
-                        isPriorAnInsert = true;
-                        insEndPos = -1;
-                        parameterCount = 0;
-                    }
                 }
                 break;
             case 'i':
-                insEndPos = Parser.parseInsertKeyword(aChars, i, false);
+                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, false) == -1;
                 break;
 
             case 'I':
-                insEndPos = Parser.parseInsertKeyword(aChars, i, true);
+                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, true) == -1;
                 break;
                 
             case 'r':
                 // exclude insert statements with a returning keyword
-                if (Parser.parseReturningKeyword(aChars, i, false)) {
-                    isPriorAnInsert = false;
-                    insEndPos = -1;
-                    parameterCount = 0;
-                }
+                isCurrentReWriteCompatible = Parser.parseReturningKeyword(aChars, i, false) == false;
                 break;
             case 'R':
                 // exclude insert statements with a RETURNING keyword
-                if (Parser.parseReturningKeyword(aChars, i, false)) {
-                    isPriorAnInsert = false;
-                    insEndPos = -1;
-                    parameterCount = 0;
-                }
+                isCurrentReWriteCompatible = Parser.parseReturningKeyword(aChars, i, true) == false;
                 break;
                 
             default:
@@ -237,15 +210,8 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         fragmentList.add(query.substring(fragmentStart));
         if (fragmentList.size() > 1 || ((String)fragmentList.get(0)).trim().length() > 0) {
-            if (insEndPos != -1) {
-                statementList.add(fragmentList.toArray(new String[fragmentList.size()]));
-                isPriorAnInsert = true;
-            }
-            else {
-                statementList.add(fragmentList.toArray(new String[fragmentList.size()]));
-                isPriorAnInsert = false;
-            }
-        } 
+            statementList.add(fragmentList.toArray(new String[fragmentList.size()]));
+        }
 
         if (statementList.isEmpty())  // Empty query.
             return EMPTY_QUERY;
@@ -253,7 +219,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         if (statementList.size() == 1)
         {
             // Only one statement.
-            return new SimpleQuery((String[]) statementList.get(0), protoConnection);
+            return new SimpleQuery((String[]) statementList.get(0), protoConnection, isCurrentReWriteCompatible);
         }
 
         // Multiple statements.
@@ -264,7 +230,11 @@ public class QueryExecutorImpl implements QueryExecutor {
         {
             String[] fragments = (String[]) statementList.get(i);
             offsets[i] = offset;
-            subqueries[i] = new SimpleQuery(fragments, protoConnection);
+            if (i+1 == statementList.size()) {
+                subqueries[i] = new SimpleQuery(fragments, protoConnection );
+            } else {
+                subqueries[i] = new SimpleQuery(fragments, protoConnection);
+            }
             offset += fragments.length - 1;
         }
 
@@ -2288,23 +2258,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         handler.handleCompletion();
     }
     
-    /**
-     * Modify the last fragment to include additional parameters.
-     * Method will detect if the final char in the last fragment is
-     * a ';' char.
-     * @param fragments String fragments of the sql statemennt
-     * @param parameterCount number of parameters to add to end of statement
-     */
-    public void reWrite(String[] fragments, int parameterCount ) {
-        String frag = fragments[fragments.length-1];
-        
-        if (frag.charAt(frag.length()-1) == ';') {
-            fragments[fragments.length-1] = frag.substring(0, frag.length()-2) + buildParameters(parameterCount);
-        } else {
-            fragments[fragments.length-1] = frag + buildParameters(parameterCount);
-        }
-    }
-    
     private String buildParameters (int parameterCount) {
         StringBuilder params = new StringBuilder((parameterCount*2)+2);
         params.append(",(");
@@ -2319,55 +2272,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         return params.toString();
     }
     
-    public class InsertStatementWrapper {
-        private StringBuilder query;
-        private boolean isReWritten = false;
-        private int parameterCount = 0;
-        private int uniqBegin = 5;
-        private int uniqEnd = -1;
-        public InsertStatementWrapper(String[] fragments, int count) {
-            this.query = new StringBuilder(fragments.length);
-            for (int i = 0; i < fragments.length; i += 1){
-                this.query.append(fragments[i]);
-            }
-            uniqEnd = this.query.length() -1;
-            this.parameterCount = count;
-        }
-        public String getQuery() {
-            return query.toString();
-        }
-        public void setQuery(String query) {
-            this.query.append(query);
-        }
-        public String getUnique() {
-            return this.query.substring(uniqBegin, uniqEnd);
-        }
-        public boolean isReWritten() {
-            return isReWritten;
-        }
-        public void setReWritten(boolean isReWritten) {
-            this.isReWritten = isReWritten;
-        }
-        public int getParameterCount() {
-            return parameterCount;
-        }
-        public int incrementParameterCount() {
-            return this.parameterCount += 1;
-        }
-        public void addRow () {
-            query.append(",(");
-            for (int count = 0; count < this.parameterCount; count += 1) {
-                if (0 == count) {
-                    query.append("?");
-                } else {
-                    query.append(",?");
-                }
-            }
-            query.append("");
-            this.isReWritten = true;
-        }
-    }
-
     /*
      * Receive the field descriptions from the back end.
      */
@@ -2505,6 +2409,24 @@ public class QueryExecutorImpl implements QueryExecutor {
         default:
             throw new IOException("unexpected transaction state in ReadyForQuery message: " + (int)tStatus);
         }
+    }
+    
+    /** 
+     * Update the mapping of parameters to statements.
+     * @param statementParamMap
+     * @param totalParameters
+     */
+    private void updateStatementParamMapping(int statementCount, List statementParamMap) {
+        if (statementCount != statementParamMap.size()) {
+            // new statement
+            List statement = new ArrayList<>();
+            statementParamMap.add(statement);
+            statement.add(statementCount);
+        }
+        else {
+            ((List)statementParamMap.get(statementCount-1)).add(statementCount);
+        }
+        
     }
 
     private final ArrayList pendingParseQueue = new ArrayList(); // list of SimpleQuery instances

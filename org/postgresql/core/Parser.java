@@ -186,16 +186,18 @@ public class Parser {
 
     /**
      * Parse string to find the end of the INSERT keyword.
-     * Assume char at pos offset is already an i/I.
      * @return int end position of the word insert in the query
      */
-    public static int parseInsertKeyword(final char[] query, int offset, boolean upper) {
+    public static int parseInsertKeyword(final char[] query, int offset, boolean isUpper) {
         int endPos = -1;
         
-        if (upper && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
+        if (query.length < (offset+7))
+            return -1;
+        
+        if (isUpper && query[offset+1] == 'I' && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
             endPos = offset + 6;
         }
-        else if ( !upper && query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
+        else if ( !isUpper &&  query[offset+1] == 'i' &&  query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
             endPos = offset + 6;
         }
         return endPos;
@@ -210,10 +212,10 @@ public class Parser {
      */
     public static boolean parseReturningKeyword(final char[] query, int offset, boolean isUpper) {
         boolean present = false;
-        if (isUpper && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
+        if ( isUpper && query[offset+1] == 'R' && query[offset+2] == 'E' && query[offset+3] == 'T' && query[offset+4] == 'U' && query[offset+5] == 'R' && query[offset+5] == 'N' && query[offset+5] == 'I' && query[offset+5] == 'N' && query[offset+5] == 'G' ) { 
             present = true;
         }
-        else if ( query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
+        else if ( !isUpper && query[offset+1] == 'r' && query[offset+2] == 'e' && query[offset+3] == 't' && query[offset+4] == 'u' && query[offset+5] == 'r' && query[offset+5] == 'n' && query[offset+5] == 'i' && query[offset+5] == 'n' && query[offset+5] == 'g' ) {
             present = false;
         }
         return present;

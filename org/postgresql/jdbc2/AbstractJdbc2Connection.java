@@ -89,6 +89,7 @@ public abstract class AbstractJdbc2Connection implements BaseConnection
     private volatile Timer cancelTimer = null;
 
     private boolean reWriteBatchedInserts = false;
+    
     //
     // Ctor.
     //
