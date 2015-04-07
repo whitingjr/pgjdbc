@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.StreamWrapper;
@@ -166,5 +167,26 @@ class FastpathParameterList implements ParameterList {
     }
 
     private final Object[] paramValues;
+    @Override
+    public byte[][] getEncoding() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    @Override
+    public int[] getFlags() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    @Override
+    public int[] getParamTypes() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Object[] getValues() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
 

@@ -153,4 +153,22 @@ class CompositeParameterList implements V3ParameterList {
     private final int total;
     private final SimpleParameterList[] subparams;
     private final int[] offsets;
+    @Override
+    public byte[][] getEncoding() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    public int[] getFlags() {
+        return null;
+    };
+    @Override
+    public int[] getParamTypes() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    @Override
+    public Object[] getValues() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

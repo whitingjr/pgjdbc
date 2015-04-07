@@ -10,6 +10,7 @@ package org.postgresql.core.v2;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.postgresql.core.*;
 
 /**
@@ -121,5 +122,16 @@ class V2Query implements Query {
     private final String[] fragments;      // Query fragments, length == # of parameters + 1
     
     private final boolean useEStringSyntax; // whether escaped string syntax should be used
+    
+    @Override
+    public void addQueryFragments(String[] fragments) {
+        // TODO Auto-generated method stub
+        
+    }
+    @Override
+    public boolean isStatementReWritableInsert() {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }
 

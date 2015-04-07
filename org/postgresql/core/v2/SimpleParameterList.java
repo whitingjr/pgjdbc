@@ -15,6 +15,7 @@ import java.io.Writer;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.StreamWrapper;
@@ -187,5 +188,24 @@ class SimpleParameterList implements ParameterList {
      * might be the same (by identity) as a String elsewhere.
      */
     private final static String NULL_OBJECT = new String("NULL");
+    
+    @Override
+    public byte[][] getEncoding() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    @Override
+    public int[] getFlags() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    public int[] getParamTypes() {
+        return null;
+    };
+    @Override
+    public Object[] getValues() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
 

@@ -65,4 +65,5 @@ public interface Query {
     
     void addQueryFragments(String[] fragments);
 
+ 
 }

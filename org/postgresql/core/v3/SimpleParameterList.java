@@ -11,7 +11,9 @@ package org.postgresql.core.v3;
 import java.io.InputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.postgresql.core.*;
 import org.postgresql.util.PSQLException;
@@ -368,6 +370,23 @@ class SimpleParameterList implements V3ParameterList {
     public SimpleParameterList[] getSubparams() {
         return null;
     }
+    
+    @Override
+    public Object[] getValues() {
+        return paramValues;
+    }
+    @Override
+    public int[] getParamTypes() {
+        return paramTypes;
+    }
+    @Override
+    public int[] getFlags() {
+        return flags;
+    }
+    @Override
+    public byte[][] getEncoding() {
+        return encoded;
+    }
 
     private final Object[] paramValues;
     private final int[] paramTypes;
@@ -380,5 +399,6 @@ class SimpleParameterList implements V3ParameterList {
      * "parameter never set" from "parameter set to null".
      */
     private final static Object NULL_OBJECT = new Object();
+
 }
 

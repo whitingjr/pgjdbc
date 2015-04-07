@@ -25,7 +25,6 @@ import org.postgresql.Driver;
 import org.postgresql.largeobject.*;
 import org.postgresql.core.*;
 import org.postgresql.core.types.*;
-import org.postgresql.core.v3.SimpleQuery;
 import org.postgresql.util.ByteConverter;
 import org.postgresql.util.HStoreConverter;
 import org.postgresql.util.PGBinaryObject;
@@ -3030,7 +3029,9 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
 
         Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
         if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
-            reWrite(batchStatements, batchParameters, preparedParameters);
+//            reWrite(batchStatements, batchParameters, preparedParameters);
+            batchStatements.add(preparedQuery);
+            batchParameters.add(preparedParameters.copy());
         }
         else {
             // we need to create copies of our parameters, otherwise the values can be changed
@@ -3541,12 +3542,30 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param priorParameters
      * @param currentParameters
      */
+    /*
     private ParameterList reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
         Query prior = (Query)batchStatements.remove(batchStatements.size()-1);
         int sizeBeforehand = prior.createParameterList().getInParameterCount();
-        prior.addQueryFragments();
+        prior.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
         ParameterList replacement = prior.createParameterList();
-        r
+        Object[] values = preparedParameters.getValues();
+        int[] paramTypes = preparedParameters.getParamTypes();
+        int[] flags = preparedParameters.getFlags();
+        byte[][] encoding = preparedParameters.getEncoding();
+        replacement.setParameters(values, paramTypes, flags, encoding);
+        return replacement;
+    }*/
+    
+    /**
+     * Add fragments that mimic QueryExecutorImpl.parseQuery processing. 
+     * @param paramCount
+     * @return
+     */
+    /*
+    private String[] formatQueryFragments(int paramCount) {
         
-    }
+        String[] fragments = new String[]();
+        
+        return fragments;
+    }*/
 }
