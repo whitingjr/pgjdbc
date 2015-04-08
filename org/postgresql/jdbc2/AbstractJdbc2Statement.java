@@ -3027,14 +3027,20 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             return;
         }
 
-        Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
-        if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
-//            reWrite(batchStatements, batchParameters, preparedParameters);
-            batchStatements.add(preparedQuery);
-            batchParameters.add(preparedParameters.copy());
+        if (batchStatements.size() != 0) {
+            Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
+            if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
+//                reWrite(batchStatements, batchParameters, preparedParameters);
+                batchStatements.add(preparedQuery);
+                batchParameters.add(preparedParameters.copy());
+            }
+            else {
+               // we need to create copies of our parameters, otherwise the values can be changed
+                batchStatements.add(preparedQuery);
+                batchParameters.add(preparedParameters.copy());
+            }
         }
         else {
-            // we need to create copies of our parameters, otherwise the values can be changed
             batchStatements.add(preparedQuery);
             batchParameters.add(preparedParameters.copy());
         }
@@ -3563,7 +3569,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      */
     /*
     private String[] formatQueryFragments(int paramCount) {
-        
         String[] fragments = new String[]();
         
         return fragments;
