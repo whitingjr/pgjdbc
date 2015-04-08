@@ -3021,13 +3021,14 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         {
             batchStatements = new ArrayList();
             batchParameters = new ArrayList();
-            // we need to create copies of our parameters, otherwise the values can be changed
-            batchStatements.add(preparedQuery);
-            batchParameters.add(preparedParameters.copy());
-            return;
         }
 
-        if (batchStatements.size() != 0) {
+        if (batchStatements.size() == 0) {
+            batchStatements.add(preparedQuery);
+            // we need to create copies of our parameters, otherwise the values can be changed
+            batchParameters.add(preparedParameters.copy());
+            return;
+        } else {
             Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
             if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
 //                reWrite(batchStatements, batchParameters, preparedParameters);
@@ -3039,10 +3040,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
                 batchStatements.add(preparedQuery);
                 batchParameters.add(preparedParameters.copy());
             }
-        }
-        else {
-            batchStatements.add(preparedQuery);
-            batchParameters.add(preparedParameters.copy());
         }
     }
 
@@ -3548,10 +3545,14 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param priorParameters
      * @param currentParameters
      */
-    /*
+    
     private ParameterList reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
         Query prior = (Query)batchStatements.remove(batchStatements.size()-1);
         int sizeBeforehand = prior.createParameterList().getInParameterCount();
+        // modify last fragment to begin next parameter placement
+        String[] fragments = prior.getFragments();
+        fragments[fragments.length -1] = fragments[fragments.length -1] + ",(";
+        
         prior.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
         ParameterList replacement = prior.createParameterList();
         Object[] values = preparedParameters.getValues();
@@ -3560,17 +3561,21 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         byte[][] encoding = preparedParameters.getEncoding();
         replacement.setParameters(values, paramTypes, flags, encoding);
         return replacement;
-    }*/
+    }
     
     /**
      * Add fragments that mimic QueryExecutorImpl.parseQuery processing. 
      * @param paramCount
      * @return
      */
-    /*
-    private String[] formatQueryFragments(int paramCount) {
-        String[] fragments = new String[]();
-        
+    
+    private String[] formatQueryFragments( int paramCount) {
+        String[] fragments = new String[paramCount];
+        int end = paramCount-1;
+        for (int i = 0 ; i < end; i += 1) {
+            fragments[i] = ",";
+        }
+        fragments[paramCount-1] = ")";
         return fragments;
-    }*/
+    }
 }

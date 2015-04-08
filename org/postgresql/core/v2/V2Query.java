@@ -9,6 +9,7 @@
 package org.postgresql.core.v2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.postgresql.core.*;
@@ -104,7 +105,7 @@ class V2Query implements Query {
     public void close() {
     }
 
-    String[] getFragments() {
+    public String[] getFragments() {
         return fragments;
     }
 
@@ -119,19 +120,28 @@ class V2Query implements Query {
 
     private static final ParameterList NO_PARAMETERS = new SimpleParameterList(0, false);
 
-    private final String[] fragments;      // Query fragments, length == # of parameters + 1
+    private String[] fragments;      // Query fragments, length == # of parameters + 1
     
     private final boolean useEStringSyntax; // whether escaped string syntax should be used
     
+    private boolean statementReWritableInsert;
+    
     @Override
-    public void addQueryFragments(String[] fragments) {
-        // TODO Auto-generated method stub
-        
+    public void addQueryFragments(String[] additional) {
+        String[] replacement = Arrays.copyOf(this.fragments, this.fragments.length + additional.length);
+        int pos = this.fragments.length;
+        for (int i = 0; i < replacement.length; i += 1) {
+            replacement[pos++] = additional[i];
+        }
+        this.fragments = replacement;
     }
     @Override
     public boolean isStatementReWritableInsert() {
-        // TODO Auto-generated method stub
-        return false;
+        return this.statementReWritableInsert;
+    }
+    
+    public void setStatementReWritableInsert(boolean canReWrite) {
+        this.statementReWritableInsert = canReWrite;
     }
 }
 

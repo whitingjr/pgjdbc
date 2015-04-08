@@ -114,7 +114,7 @@ class SimpleQuery implements V3Query {
     // Implementation guts
     //
 
-    String[] getFragments() {
+    public String[] getFragments() {
         return fragments;
     }
 
