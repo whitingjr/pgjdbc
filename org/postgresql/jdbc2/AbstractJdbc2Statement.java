@@ -3031,12 +3031,10 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         } else {
             Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
             if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
-//                reWrite(batchStatements, batchParameters, preparedParameters);
-                batchStatements.add(preparedQuery);
-                batchParameters.add(preparedParameters.copy());
+                reWrite(batchStatements, batchParameters, preparedParameters);
             }
             else {
-               // we need to create copies of our parameters, otherwise the values can be changed
+                // we need to create copies of our parameters, otherwise the values can be changed
                 batchStatements.add(preparedQuery);
                 batchParameters.add(preparedParameters.copy());
             }
@@ -3545,21 +3543,19 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param priorParameters
      * @param currentParameters
      */
-    
     private ParameterList reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
         Query prior = (Query)batchStatements.remove(batchStatements.size()-1);
-        int sizeBeforehand = prior.createParameterList().getInParameterCount();
         // modify last fragment to begin next parameter placement
         String[] fragments = prior.getFragments();
         fragments[fragments.length -1] = fragments[fragments.length -1] + ",(";
         
         prior.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
+        // create a new paramlist that is sized correctly
         ParameterList replacement = prior.createParameterList();
-        Object[] values = preparedParameters.getValues();
-        int[] paramTypes = preparedParameters.getParamTypes();
-        int[] flags = preparedParameters.getFlags();
-        byte[][] encoding = preparedParameters.getEncoding();
-        replacement.setParameters(values, paramTypes, flags, encoding);
+        ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size()-1);
+        replacement.addAll(old);
+        replacement.appendAll(preparedParameters);
+        batchParameters.add(replacement);
         return replacement;
     }
     

@@ -190,22 +190,26 @@ class SimpleParameterList implements ParameterList {
     private final static String NULL_OBJECT = new String("NULL");
     
     @Override
-    public byte[][] getEncoding() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    @Override
-    public int[] getFlags() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    public int[] getParamTypes() {
-        return null;
-    };
-    @Override
     public Object[] getValues() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.paramValues;
+    }
+    
+    @Override
+    public void addAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+            // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 0, spl.getInParameterCount());
+        }
+    }
+    
+    @Override
+    public void appendAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+         // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, getInParameterCount()-spl.getInParameterCount(), spl.getInParameterCount());
+        }
     }
 }
 

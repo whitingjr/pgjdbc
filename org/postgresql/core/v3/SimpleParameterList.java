@@ -11,9 +11,7 @@ package org.postgresql.core.v3;
 import java.io.InputStream;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.postgresql.core.*;
 import org.postgresql.util.PSQLException;
@@ -386,6 +384,33 @@ class SimpleParameterList implements V3ParameterList {
     @Override
     public byte[][] getEncoding() {
         return encoded;
+    }
+    
+    @Override
+    public void addAll(ParameterList list) {
+        if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
+            // only v3.SimpleParameterList is compatible with this type
+            // we need to create copies of our parameters, otherwise the values can be changed
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getFlags(), 0, this.flags, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getEncoding(), 0, this.encoded, 0, spl.getInParameterCount());
+        }
+    }
+    
+    @Override
+    public void appendAll(ParameterList list) {
+        if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
+            // only v3.SimpleParameterList is compatible with this type
+            // we need to create copies of our parameters, otherwise the values can be changed
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            int start = this.paramValues.length - spl.getInParameterCount();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, start, spl.getInParameterCount());
+            System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, start, spl.getInParameterCount());
+            System.arraycopy(spl.getFlags(), 0, this.flags, start, spl.getInParameterCount());
+            System.arraycopy(spl.getEncoding(), 0, this.encoded, start, spl.getInParameterCount());
+        }
     }
 
     private final Object[] paramValues;

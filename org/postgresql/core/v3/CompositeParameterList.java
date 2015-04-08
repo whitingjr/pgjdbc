@@ -171,4 +171,14 @@ class CompositeParameterList implements V3ParameterList {
         // TODO Auto-generated method stub
         return null;
     }
+    
+    @Override
+    public void addAll(ParameterList list) {
+        
+    }
+    @Override
+    public void appendAll(ParameterList list) {
+        // TODO Auto-generated method stub
+        
+    }
 }

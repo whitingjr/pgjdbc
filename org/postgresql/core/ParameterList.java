@@ -178,15 +178,14 @@ public interface ParameterList {
      */
     String toString(int index);
     
+    void addAll(ParameterList list);
+    
+    void appendAll(ParameterList list);
+    
     /**
-     * Returns the bound parameters.
+     * Returns the bound parameter values.
      * @return
      */
     Object[] getValues();
     
-    int[] getParamTypes();
-    
-    int[] getFlags();
-    
-    byte[][] getEncoding();
 }

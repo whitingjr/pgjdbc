@@ -167,26 +167,35 @@ class FastpathParameterList implements ParameterList {
     }
 
     private final Object[] paramValues;
-    @Override
-    public byte[][] getEncoding() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    @Override
-    public int[] getFlags() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    @Override
-    public int[] getParamTypes() {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     @Override
     public Object[] getValues() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.paramValues;
+    }
+    @Override
+    public void addAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+            // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list;
+            int count = spl.getInParameterCount();
+            Object[] values = spl.getValues();
+            for (int i = 0 ; i < count ; i += 1) {
+                this.paramValues[i] = values[i]; 
+            }
+        }
+    }
+    
+    @Override
+    public void appendAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+         // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list;
+            int count = (this.paramValues.length-1) + spl.getInParameterCount();
+            Object[] values = spl.getValues();
+            for (int i = (values.length -1) ; i < count ; i += 1) {
+                this.paramValues[i] = values[i]; 
+            }
+        }
     }
 }
 
