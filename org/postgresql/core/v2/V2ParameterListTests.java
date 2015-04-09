@@ -3,9 +3,8 @@ package org.postgresql.core.v2;
 import java.sql.SQLException;
 
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
-public class ParameterListTests extends TestCase{
+public class V2ParameterListTests extends TestCase{
 
     public void testMergeOfParameterLists() {
         try {
