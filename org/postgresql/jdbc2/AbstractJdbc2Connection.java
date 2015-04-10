@@ -1272,8 +1272,10 @@ public abstract class AbstractJdbc2Connection implements BaseConnection
     {
         this.disableColumnSanitiser = disableColumnSanitiser;
     }
-    
-    public boolean isReWriteBatchedInserts() {
+
+    @Override
+    public boolean isReWriteBatchedInsertsEnabled() {
+        
         return this.reWriteBatchedInserts;
     }
     

@@ -85,6 +85,10 @@ class CompositeQuery implements V3Query {
     
     @Override
     public void addQueryFragments(String[] fragments) {
-        // no-op
+        // no-op, unsupported
+    }
+    @Override
+    public String[] getFragments() {
+        return null; // unsupported
     }
 }

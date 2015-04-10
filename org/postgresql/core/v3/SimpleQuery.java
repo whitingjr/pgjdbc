@@ -249,24 +249,10 @@ class SimpleQuery implements V3Query {
     
     @Override
     public boolean isStatementReWritableInsert() {
-        return false;
+        return this.statementReWritableInsert;
     }
     public void setStatementReWritableInsert(boolean isReWriteable) {
         this.statementReWritableInsert = isReWriteable;
-        if (isReWriteable) {
-            /* compute a hashcode for the initial sql fragment.
-             * Allowing a quicker comparison of SimpleQuery objects. */
-        }
-    }
-    @Override
-    public boolean equals(Object obj) {
-        // TODO Auto-generated method stub
-        return super.equals(obj);
-    }
-    @Override
-    public int hashCode() {
-        // TODO Auto-generated method stub
-        return super.hashCode();
     }
     
     @Override

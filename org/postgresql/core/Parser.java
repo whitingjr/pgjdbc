@@ -216,7 +216,7 @@ public class Parser {
             present = true;
         }
         else if ( !isUpper && query[offset+1] == 'r' && query[offset+2] == 'e' && query[offset+3] == 't' && query[offset+4] == 'u' && query[offset+5] == 'r' && query[offset+5] == 'n' && query[offset+5] == 'i' && query[offset+5] == 'n' && query[offset+5] == 'g' ) {
-            present = false;
+            present = true;
         }
         return present;
     }

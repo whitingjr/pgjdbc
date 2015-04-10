@@ -15,6 +15,7 @@ import java.math.*;
 import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
@@ -48,7 +49,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     protected final int concurrency;   // is it updateable or not?     (ResultSet.CONCUR_xxx)
     protected int fetchdirection = ResultSet.FETCH_FORWARD;  // fetch direction hint (currently ignored)
     private volatile TimerTask cancelTimerTask = null;
-    private String priorInsert = null; // anything other than a immediate prior rewriteable insert statement will be null  
+    private StatementComparator comparator = null;
 
     /**
      * Does the caller of execute/executeUpdate want generated keys for this
@@ -3029,9 +3030,13 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             batchParameters.add(preparedParameters.copy());
             return;
         } else {
-            Query priorQuery = (Query)batchStatements.get(batchStatements.size()-1);
-            if (preparedQuery.isStatementReWritableInsert() && priorQuery.equals(preparedQuery)) {
-                reWrite(batchStatements, batchParameters, preparedParameters);
+            if (this.connection.isReWriteBatchedInsertsEnabled() && preparedQuery.isStatementReWritableInsert()) {
+                if (this.comparator == null) {
+                    this.comparator = new StatementComparator();
+                }
+                if (this.comparator.compare((Query)batchStatements.get(batchStatements.size()-1), preparedQuery) == 0) {
+                    reWrite(batchStatements, batchParameters, preparedParameters);
+                }
             }
             else {
                 // we need to create copies of our parameters, otherwise the values can be changed
@@ -3544,7 +3549,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param currentParameters
      */
     private ParameterList reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
-        Query prior = (Query)batchStatements.remove(batchStatements.size()-1);
+        Query prior = (Query)batchStatements.get(batchStatements.size()-1);
         // modify last fragment to begin next parameter placement
         String[] fragments = prior.getFragments();
         fragments[fragments.length -1] = fragments[fragments.length -1] + ",(";
@@ -3573,5 +3578,29 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         }
         fragments[paramCount-1] = ")";
         return fragments;
+    }
+    
+    /**
+     * An object to compare two queries to detect if they are the same.
+     * Uses the initial fragment in a Query. Assumes the inital fragment
+     * is everything up to the initial query parameter.
+     * @author Jeremy Whiting
+     *
+     */
+    public class StatementComparator implements Comparator {
+        /**
+         * compare implementation that compares statements.
+         */
+        @Override
+        public int compare(Object o1, Object o2) {
+            if (o1 != null && o1 instanceof Query && o2 != null && o2 instanceof Query) {
+                Query q1 = (Query)o1;
+                Query q2 = (Query)o2;
+                if (q1.getFragments()[0].substring(6).equals(q2.getFragments()[0].substring(6))) {
+                    return 0;
+                }
+            }
+            return -1;
+        }
     }
 }

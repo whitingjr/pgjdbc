@@ -13,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
+import org.postgresql.core.BaseConnection;
 import org.postgresql.test.TestUtil;
 import org.postgresql.util.PSQLException;
 
@@ -445,6 +446,9 @@ public class BatchExecuteTest extends TestCase
      */
     public void testBatchWithRepeatedInsertStatement() throws SQLException {
         PreparedStatement pstmt = null;
+        /* Optimization to re-write insert statements is disabled by default.
+         * Do nothing here.
+         */
         try {
             pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
             pstmt.setInt(1, 1);
@@ -467,34 +471,6 @@ public class BatchExecuteTest extends TestCase
         }
     }
     
-    /**
-     * Check batching using two individual statements that are both the same type.
-     * Test to check the re-write optimization behaviour.
-     * @throws SQLException
-     */
-    public void testBatchWithReWrittenRepeatedInsertStatement() throws SQLException {
-        PreparedStatement pstmt = null;
-        //TODO: set configuration property for batch re-write
-        try {
-            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
-            pstmt.setInt(1, 1);
-            pstmt.setInt(2, 1);
-            pstmt.addBatch(); //statement one
-            pstmt.setInt(1, 2);
-            pstmt.setInt(2, 2);
-            pstmt.addBatch();//statement two, this should be collapsed into prior statement
-            int[] outcome = pstmt.executeBatch();
-
-            assertNotNull(outcome);
-            assertEquals(1, outcome.length);
-            assertEquals(2, outcome[0]);
-        } catch (SQLException sqle) {
-            fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
-        } finally {
-            if (null != pstmt) {pstmt.close();}
-            con.rollback();
-        }
-    }
     
     /**
     * Test case to make sure the update counter is correct for the
@@ -532,7 +508,8 @@ public class BatchExecuteTest extends TestCase
     public void testBatchWithMultiStatementPS() throws SQLException {
         PreparedStatement pstmt = null;
         try {
-            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?),(?,?);SELECT pk FROM testbatch WHERE (pk=?);");
+            pstmt = con.prepareStatement(
+                "INSERT INTO testbatch VALUES (?,?),(?,?);SELECT pk FROM testbatch WHERE (pk=?);");
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 1);
             pstmt.setInt(3, 2);

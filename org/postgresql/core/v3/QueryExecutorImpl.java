@@ -187,20 +187,20 @@ public class QueryExecutorImpl implements QueryExecutor {
                 }
                 break;
             case 'i':
-                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, false) == -1;
+                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, false) != -1;
                 break;
 
             case 'I':
-                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, true) == -1;
+                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, true) != -1;
                 break;
                 
             case 'r':
                 // exclude insert statements with a returning keyword
-                isCurrentReWriteCompatible = Parser.parseReturningKeyword(aChars, i, false) == false;
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i, false) == false);
                 break;
             case 'R':
                 // exclude insert statements with a RETURNING keyword
-                isCurrentReWriteCompatible = Parser.parseReturningKeyword(aChars, i, true) == false;
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i, true) == false);
                 break;
                 
             default:

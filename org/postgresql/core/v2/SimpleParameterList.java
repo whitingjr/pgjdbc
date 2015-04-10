@@ -199,16 +199,19 @@ class SimpleParameterList implements ParameterList {
         if (list instanceof SimpleParameterList ) {
             // only v2.SimpleParameterList is compatible with this type
             SimpleParameterList spl = (SimpleParameterList) list.copy();
-            System.arraycopy(spl.getValues(), 0, this.paramValues, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 0, 
+                spl.getInParameterCount());
         }
     }
     
     @Override
     public void appendAll(ParameterList list) {
         if (list instanceof SimpleParameterList ) {
-         // only v2.SimpleParameterList is compatible with this type
+            // only v2.SimpleParameterList is compatible with this type
             SimpleParameterList spl = (SimpleParameterList) list.copy();
-            System.arraycopy(spl.getValues(), 0, this.paramValues, getInParameterCount()-spl.getInParameterCount(), spl.getInParameterCount());
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 
+                getInParameterCount()-spl.getInParameterCount(), 
+                spl.getInParameterCount());
         }
     }
 }
