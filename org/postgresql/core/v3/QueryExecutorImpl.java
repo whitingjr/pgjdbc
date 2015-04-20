@@ -187,11 +187,11 @@ public class QueryExecutorImpl implements QueryExecutor {
                 }
                 break;
             case 'i':
-                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, false) != -1;
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, false) != -1);
                 break;
 
             case 'I':
-                isCurrentReWriteCompatible = Parser.parseInsertKeyword(aChars, i, true) != -1;
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, true) != -1);
                 break;
                 
             case 'r':

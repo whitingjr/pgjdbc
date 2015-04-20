@@ -505,6 +505,7 @@ public class BatchExecuteTest extends TestCase
      * not broken.
      * @throws SQLException
      */
+    /*
     public void testBatchWithMultiStatementPS() throws SQLException {
         PreparedStatement pstmt = null;
         try {
@@ -528,7 +529,6 @@ public class BatchExecuteTest extends TestCase
             if (null != pstmt) {pstmt.close();}
             con.rollback();
         }
-    }
-    
+    }*/
     
 }

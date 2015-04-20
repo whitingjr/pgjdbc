@@ -23,8 +23,8 @@ public class BatchedInsertReWriteEnabled extends TestCase{
         PreparedStatement pstmt = null;
         try {
             /*
-             * The connection should be configured so the batch rewrite optimization
-             * is enabled
+             * The connection is configured so the batch rewrite optimization
+             * is enabled. See setUp()
              */
             pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
             pstmt.setInt(1, 1);
@@ -45,6 +45,34 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             con.rollback();
         }
     }
+    
+    public void testBatchWithReturningKeyword() throws SQLException {
+        PreparedStatement pstmt = null;
+        try {
+            /*
+             * The connection is configured so the batch rewrite optimization
+             * is enabled. See setUp()
+             */
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?) RETURNING *");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 1);
+            pstmt.addBatch();
+            pstmt.setInt(1, 2);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(1, outcome[0]);
+            assertEquals(1, outcome[1]);
+        } catch (SQLException sqle) {
+            fail ("Failed. Reason:" +sqle.getMessage()+ sqle.getNextException().getMessage()) ;
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    } 
 
 
     public BatchedInsertReWriteEnabled(String name)
