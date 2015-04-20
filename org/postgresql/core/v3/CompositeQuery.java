@@ -80,9 +80,6 @@ class CompositeQuery implements V3Query {
     }
     
 
-    private final SimpleQuery[] subqueries;
-    private final int[] offsets;
-    
     @Override
     public void addQueryFragments(String[] fragments) {
         // no-op, unsupported
@@ -91,4 +88,8 @@ class CompositeQuery implements V3Query {
     public String[] getFragments() {
         return null; // unsupported
     }
+
+    private final SimpleQuery[] subqueries;
+    private final int[] offsets;
+    
 }
