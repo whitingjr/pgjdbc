@@ -2,6 +2,7 @@ package org.postgresql.test.jdbc2;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
@@ -36,8 +37,9 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             int[] outcome = pstmt.executeBatch();
 
             assertNotNull(outcome);
-            assertEquals(1, outcome.length);
-            assertEquals(2, outcome[0]);
+            assertEquals(2, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
         } catch (SQLException sqle) {
             fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
         } finally {
@@ -46,34 +48,7 @@ public class BatchedInsertReWriteEnabled extends TestCase{
         }
     }
     
-    public void testBatchWithReturningKeyword() throws SQLException {
-        PreparedStatement pstmt = null;
-        try {
-            /*
-             * The connection is configured so the batch rewrite optimization
-             * is enabled. See setUp()
-             */
-            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?) RETURNING *");
-            pstmt.setInt(1, 1);
-            pstmt.setInt(2, 1);
-            pstmt.addBatch();
-            pstmt.setInt(1, 2);
-            pstmt.setInt(2, 2);
-            pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
-
-            assertNotNull(outcome);
-            assertEquals(2, outcome.length);
-            assertEquals(1, outcome[0]);
-            assertEquals(1, outcome[1]);
-        } catch (SQLException sqle) {
-            fail ("Failed. Reason:" +sqle.getMessage()+ sqle.getNextException().getMessage()) ;
-        } finally {
-            if (null != pstmt) {pstmt.close();}
-            con.rollback();
-        }
-    } 
-
+    
 
     public BatchedInsertReWriteEnabled(String name)
     {
