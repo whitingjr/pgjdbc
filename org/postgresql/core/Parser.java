@@ -211,14 +211,13 @@ public class Parser {
      * @return
      */
     public static boolean parseReturningKeyword(final char[] query, int offset, boolean isUpper) {
-        boolean present = false;
         if ( isUpper && query[offset] == 'R' && query[offset+1] == 'E' && query[offset+2] == 'T' && query[offset+3] == 'U' && query[offset+4] == 'R' && query[offset+5] == 'N' && query[offset+6] == 'I' && query[offset+7] == 'N' && query[offset+8] == 'G' ) { 
-            present = true;
+            return true;
         }
         else if ( !isUpper && query[offset] == 'r' && query[offset+1] == 'e' && query[offset+2] == 't' && query[offset+3] == 'u' && query[offset+4] == 'r' && query[offset+5] == 'n' && query[offset+6] == 'i' && query[offset+7] == 'n' && query[offset+8] == 'g' ) {
-            present = true;
+            return true;
         }
-        return present;
+        return false;
     }
     
     /**
