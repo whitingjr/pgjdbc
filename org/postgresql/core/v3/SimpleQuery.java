@@ -271,6 +271,15 @@ class SimpleQuery implements V3Query {
         }
         this.fragments = replacement;
     }
+    
+    @Override
+    public int getBatchSize() {
+        return this.batchSize;
+    }
+    @Override
+    public void incrementBatchSize() {
+        this.batchSize += 1;
+    }
 
     private String[] fragments;
     private final ProtocolConnectionImpl protoConnection;
@@ -291,6 +300,8 @@ class SimpleQuery implements V3Query {
     final static SimpleParameterList NO_PARAMETERS = new SimpleParameterList(0, null);
     
     boolean statementReWritableInsert = false;
+    
+    private int batchSize = 0;
 }
 
 

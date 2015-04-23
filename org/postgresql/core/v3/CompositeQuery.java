@@ -88,6 +88,14 @@ class CompositeQuery implements V3Query {
     public String[] getFragments() {
         return null; // unsupported
     }
+    @Override
+    public int getBatchSize() {
+        return 0; // no-op, unsupported
+    }
+    @Override
+    public void incrementBatchSize() {
+        // no-op, unsupported
+    }
 
     private final SimpleQuery[] subqueries;
     private final int[] offsets;

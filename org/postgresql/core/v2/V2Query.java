@@ -126,6 +126,8 @@ class V2Query implements Query {
     
     private boolean statementReWritableInsert;
     
+    private int batchSize = 0;
+    
     @Override
     public void addQueryFragments(String[] additional) {
         String[] replacement = Arrays.copyOf(this.fragments, this.fragments.length + additional.length);
@@ -142,6 +144,16 @@ class V2Query implements Query {
     
     public void setStatementReWritableInsert(boolean canReWrite) {
         this.statementReWritableInsert = canReWrite;
+    }
+    
+    @Override
+    public void incrementBatchSize() {
+        this.batchSize += 1;
+    }
+    
+    @Override
+    public int getBatchSize() {
+        return this.batchSize;
     }
 }
 

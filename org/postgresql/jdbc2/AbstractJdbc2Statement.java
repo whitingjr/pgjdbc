@@ -2774,6 +2774,9 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         public void handleCompletion() throws SQLException {
             if (batchException != null)
                 throw batchException;
+            
+            //TODO: check if the query was a rewritten batched insert.
+            // get the update counts and substitute the return code to be SUCCESS_NO_INFO
         }
 
         public ResultSet getGeneratedKeys() {
@@ -3561,6 +3564,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         replacement.addAll(old);
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
+        prior.incrementBatchSize();
         return replacement;
     }
     
