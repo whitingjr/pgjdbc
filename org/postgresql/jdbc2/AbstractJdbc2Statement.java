@@ -2775,8 +2775,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             if (batchException != null)
                 throw batchException;
             
-            //TODO: check if the query was a rewritten batched insert.
-            // get the update counts and substitute the return code to be SUCCESS_NO_INFO
         }
 
         public ResultSet getGeneratedKeys() {
@@ -2860,9 +2858,8 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         if (batchStatements == null || batchStatements.isEmpty())
             return new int[0];
 
-        int size = batchStatements.size();
-        int[] updateCounts = new int[size];
-
+        int[] updateCounts = new int[batchStatements.size()];
+        
         // Construct query/parameter arrays.
         Query[] queries = (Query[])batchStatements.toArray(new Query[batchStatements.size()]);
         ParameterList[] parameterLists = (ParameterList[])batchParameters.toArray(new ParameterList[batchParameters.size()]);
@@ -2954,6 +2951,19 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
 	} finally {
 	    killTimerTask();
 	}
+	
+	int batchSize = queries[0].getBatchSize();
+	if (queries[0].isStatementReWritableInsert() && batchSize > 1 ){
+        updateCounts = new int[batchSize];
+        /* In this situation there is a batch that has been rewritten. Substitute
+        * the running total returned by the database with a status code to
+        * indicate successful completion for each row the driver client added
+        * to the batch.
+        */
+        for (int i = 0; i < batchSize; i += 1 ) {
+            updateCounts[i] = Statement.SUCCESS_NO_INFO;
+        }
+    }
 
         if (wantsGeneratedKeysAlways) {
             generatedKeys = new ResultWrapper(((BatchResultHandler)handler).getGeneratedKeys());
@@ -3031,6 +3041,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             batchStatements.add(preparedQuery);
             // we need to create copies of our parameters, otherwise the values can be changed
             batchParameters.add(preparedParameters.copy());
+            preparedQuery.incrementBatchSize();
             return;
         } else {
             if (this.connection.isReWriteBatchedInsertsEnabled() && preparedQuery.isStatementReWritableInsert()) {
@@ -3551,7 +3562,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param priorParameters
      * @param currentParameters
      */
-    private ParameterList reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
+    private Query reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
         Query prior = (Query)batchStatements.get(batchStatements.size()-1);
         // modify last fragment to begin next parameter placement
         String[] fragments = prior.getFragments();
@@ -3565,7 +3576,8 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
         prior.incrementBatchSize();
-        return replacement;
+        
+        return prior;
     }
     
     /**
