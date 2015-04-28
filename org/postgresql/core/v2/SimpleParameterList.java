@@ -177,6 +177,32 @@ class SimpleParameterList implements ParameterList {
     public void setBinaryParameter(int index, byte[] value, int oid) {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public Object[] getValues() {
+        return this.paramValues;
+    }
+    
+    @Override
+    public void addAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+            // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 0, 
+                spl.getInParameterCount());
+        }
+    }
+    
+    @Override
+    public void appendAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+            // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 
+                getInParameterCount()-spl.getInParameterCount(), 
+                spl.getInParameterCount());
+        }
+    }
 
     private final Object[] paramValues;
     

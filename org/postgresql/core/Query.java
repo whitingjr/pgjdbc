@@ -56,4 +56,34 @@ public interface Query {
     boolean isStatementDescribed();
 
     boolean isEmpty();
+    
+    /**
+     * Convenience to check if the Query has an insert statement
+     * that can be re-written.
+     */
+    boolean isStatementReWritableInsert();
+    
+    /**
+     * Provide the ability to add more query fragments.
+     * @param fragments An array of strings representing each fragment.
+     */
+    void addQueryFragments(String[] fragments);
+
+    /**
+     * Get access to the fragments that make up this query.
+     * @return
+     */
+    public String[] getFragments();
+    
+    /**
+     * Increment the number of batched rows for this Query.
+     */
+    public void incrementBatchSize();
+    
+    /**
+     * Get the number of times this Query has been batched. 
+     * @return number of times <code>addBatch()</code> has been called.
+     */
+    public int getBatchSize();
+ 
 }

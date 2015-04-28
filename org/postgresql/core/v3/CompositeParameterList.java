@@ -149,6 +149,30 @@ class CompositeParameterList implements V3ParameterList {
         for (int sub = 0; sub < subparams.length; ++sub)
             subparams[sub].convertFunctionOutParameters();
     }
+    @Override
+    public byte[][] getEncoding() {
+        return null; // unsupported
+    }
+    public int[] getFlags() {
+        return null; // unsupported
+    };
+    @Override
+    public int[] getParamTypes() {
+        return null; // unsupported
+    }
+    @Override
+    public Object[] getValues() {
+        return null; // unsupported
+    }
+    
+    @Override
+    public void addAll(ParameterList list) {
+        // no-op, unsupported
+    }
+    @Override
+    public void appendAll(ParameterList list) {
+        // no-op, unsupported
+    }
 
     private final int total;
     private final SimpleParameterList[] subparams;

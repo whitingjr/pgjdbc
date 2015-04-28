@@ -69,7 +69,7 @@ public class Jdbc2TestSuite extends TestSuite
 
         // BatchExecute
         suite.addTestSuite(BatchExecuteTest.class);
-
+        suite.addTestSuite(BatchedInsertReWriteEnabled.class);
 
         // Other misc tests, based on previous problems users have had or specific
         // features some applications require.

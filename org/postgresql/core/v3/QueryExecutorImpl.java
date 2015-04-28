@@ -12,6 +12,7 @@ import org.postgresql.PGProperty;
 import org.postgresql.core.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Properties;
@@ -120,6 +121,8 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         int fragmentStart = 0;
         int inParen = 0;
+        boolean isCurrentReWriteCompatible = false;
+        int paramCount = 0;
 
         boolean standardConformingStrings = protoConnection.getStandardConformingStrings();
         
@@ -168,6 +171,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                         fragmentStart = i + 1;
                     }
                 }
+                paramCount += 1;
                 break;
 
             case ';':
@@ -180,7 +184,23 @@ public class QueryExecutorImpl implements QueryExecutor {
                     fragmentList.clear();
                 }
                 break;
+            case 'i':
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, false) != -1);
+                break;
 
+            case 'I':
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, true) != -1);
+                break;
+                
+            case 'r':
+                // exclude insert statements with a returning keyword
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i, false) == false);
+                break;
+            case 'R':
+                // exclude insert statements with a RETURNING keyword
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i, true) == false);
+                break;
+                
             default:
                 break;
             }
@@ -196,7 +216,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         if (statementList.size() == 1)
         {
             // Only one statement.
-            return new SimpleQuery((String[]) statementList.get(0), protoConnection);
+            return new SimpleQuery((String[]) statementList.get(0), protoConnection, isCurrentReWriteCompatible);
         }
 
         // Multiple statements.
@@ -2230,7 +2250,21 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         handler.handleCompletion();
     }
-
+    
+    private String buildParameters (int parameterCount) {
+        StringBuilder params = new StringBuilder((parameterCount*2)+2);
+        params.append(",(");
+        for (int i = 0; i < parameterCount; i += 1) {
+            if (0 == i) {
+                params.append("?");
+            } else {
+                params.append(",?");
+            }
+        }
+        params.append(")");
+        return params.toString();
+    }
+    
     /*
      * Receive the field descriptions from the back end.
      */
@@ -2368,6 +2402,24 @@ public class QueryExecutorImpl implements QueryExecutor {
         default:
             throw new IOException("unexpected transaction state in ReadyForQuery message: " + (int)tStatus);
         }
+    }
+    
+    /** 
+     * Update the mapping of parameters to statements.
+     * @param statementParamMap
+     * @param totalParameters
+     */
+    private void updateStatementParamMapping(int statementCount, List statementParamMap) {
+        if (statementCount != statementParamMap.size()) {
+            // new statement
+            List statement = new ArrayList<>();
+            statementParamMap.add(statement);
+            statement.add(statementCount);
+        }
+        else {
+            ((List)statementParamMap.get(statementCount-1)).add(statementCount);
+        }
+        
     }
 
     private final ArrayList pendingParseQueue = new ArrayList(); // list of SimpleQuery instances

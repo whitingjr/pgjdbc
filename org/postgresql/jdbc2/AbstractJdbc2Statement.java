@@ -15,6 +15,7 @@ import java.math.*;
 import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
@@ -48,6 +49,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     protected final int concurrency;   // is it updateable or not?     (ResultSet.CONCUR_xxx)
     protected int fetchdirection = ResultSet.FETCH_FORWARD;  // fetch direction hint (currently ignored)
     private volatile TimerTask cancelTimerTask = null;
+    private StatementComparator comparator = null;
 
     /**
      * Does the caller of execute/executeUpdate want generated keys for this
@@ -2949,6 +2951,19 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
 	} finally {
 	    killTimerTask();
 	}
+	
+        int batchSize = queries[0].getBatchSize();
+        if (queries[0].isStatementReWritableInsert() && batchSize > 1 ) {
+            updateCounts = new int[batchSize];
+            /* In this situation there is a batch that has been rewritten. Substitute
+            * the running total returned by the database with a status code to
+            * indicate successful completion for each row the driver client added
+            * to the batch.
+            */
+            for (int i = 0; i < batchSize; i += 1 ) {
+                updateCounts[i] = Statement.SUCCESS_NO_INFO;
+            }
+        }
 
         if (wantsGeneratedKeysAlways) {
             generatedKeys = new ResultWrapper(((BatchResultHandler)handler).getGeneratedKeys());
@@ -3023,9 +3038,27 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             batchParameters = new ArrayList();
         }
 
-        // we need to create copies of our parameters, otherwise the values can be changed
-        batchStatements.add(preparedQuery);
-        batchParameters.add(preparedParameters.copy());
+        if (batchStatements.size() == 0) {
+            batchStatements.add(preparedQuery);
+            // we need to create copies of our parameters, otherwise the values can be changed
+            batchParameters.add(preparedParameters.copy());
+            preparedQuery.incrementBatchSize();
+            return;
+        } else {
+            if (this.connection.isReWriteBatchedInsertsEnabled() && preparedQuery.isStatementReWritableInsert()) {
+                if (this.comparator == null) {
+                    this.comparator = new StatementComparator();
+                }
+                if (this.comparator.compare((Query)batchStatements.get(batchStatements.size()-1), preparedQuery) == 0) {
+                    reWrite(batchStatements, batchParameters, preparedParameters);
+                }
+            }
+            else {
+                // we need to create copies of our parameters, otherwise the values can be changed
+                batchStatements.add(preparedQuery);
+                batchParameters.add(preparedParameters.copy());
+            }
+        }
     }
 
     public ResultSetMetaData getMetaData() throws SQLException
@@ -3520,5 +3553,71 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     protected boolean getForceBinaryTransfer()
     {
         return forceBinaryTransfers;        
+    }
+    
+    /**
+     * Use this method to rewrite the prior Query sql with additional 
+     * paramaterized fields. Add parameters of the current list to prior. 
+     * @param priorQuery
+     * @param currentQuery
+     * @param priorParameters
+     * @param currentParameters
+     */
+    private Query reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
+        Query prior = (Query)batchStatements.get(batchStatements.size()-1);
+        // modify last fragment to begin next parameter placement
+        String[] fragments = prior.getFragments();
+        fragments[fragments.length -1] = fragments[fragments.length -1] + ",(";
+        
+        prior.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
+        // create a new paramlist that is sized correctly
+        ParameterList replacement = prior.createParameterList();
+        ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size()-1);
+        replacement.addAll(old);
+        replacement.appendAll(preparedParameters);
+        batchParameters.add(replacement);
+        prior.incrementBatchSize();
+        
+        return prior;
+    }
+    
+    /**
+     * Add fragments that mimic QueryExecutorImpl.parseQuery processing. 
+     * @param paramCount
+     * @return
+     */
+    
+    private String[] formatQueryFragments( int paramCount) {
+        String[] fragments = new String[paramCount];
+        int end = paramCount-1;
+        for (int i = 0 ; i < end; i += 1) {
+            fragments[i] = ",";
+        }
+        fragments[paramCount-1] = ")";
+        return fragments;
+    }
+    
+    /**
+     * An object to compare two queries to detect if they are the same.
+     * Uses the initial fragment in a Query. Assumes the inital fragment
+     * is everything up to the initial query parameter.
+     * @author Jeremy Whiting
+     *
+     */
+    public class StatementComparator implements Comparator {
+        /**
+         * compare implementation that compares statements.
+         */
+        @Override
+        public int compare(Object o1, Object o2) {
+            if (o1 != null && o1 instanceof Query && o2 != null && o2 instanceof Query) {
+                Query q1 = (Query)o1;
+                Query q2 = (Query)o2;
+                if (q1.getFragments()[0].substring(6).equals(q2.getFragments()[0].substring(6))) {
+                    return 0;
+                }
+            }
+            return -1;
+        }
     }
 }

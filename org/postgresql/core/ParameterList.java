@@ -9,6 +9,7 @@
 package org.postgresql.core;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.io.InputStream;
 
 /**
@@ -176,4 +177,15 @@ public interface ParameterList {
      * @return a string representation of the parameter.
      */
     String toString(int index);
+    
+    void addAll(ParameterList list);
+    
+    void appendAll(ParameterList list);
+    
+    /**
+     * Returns the bound parameter values.
+     * @return
+     */
+    Object[] getValues();
+    
 }
