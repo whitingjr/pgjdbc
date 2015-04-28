@@ -20,6 +20,8 @@ import org.postgresql.core.ResultCursor;
 import org.postgresql.core.ResultHandler;
 import org.postgresql.core.ServerVersion;
 import org.postgresql.core.Utils;
+import org.postgresql.core.v3.BatchedQueryDecorator;
+
 import org.postgresql.util.GT;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
@@ -160,6 +162,8 @@ public class PgStatement implements Statement, BaseStatement {
 
   protected int maxfieldSize = 0;
 
+  protected boolean reWriteBatchedInserts;
+
   PgStatement(PgConnection c, int rsType, int rsConcurrency, int rsHoldability)
       throws SQLException {
     this.connection = c;
@@ -170,6 +174,7 @@ public class PgStatement implements Statement, BaseStatement {
     setFetchSize(c.getDefaultFetchSize());
     setPrepareThreshold(c.getPrepareThreshold());
     this.rsHoldability = rsHoldability;
+    setReWriteBatchedInserts(c.isReWriteBatchedInsertsEnabled());
   }
 
   public ResultSet createResultSet(Query originalQuery, Field[] fields, List<byte[][]> tuples,
@@ -993,6 +998,25 @@ public class PgStatement implements Statement, BaseStatement {
       killTimerTask();
     }
 
+    if (reWriteBatchedInserts && queries[0].isStatementReWritableInsert()) {
+      if (queries[0] instanceof BatchedQueryDecorator) {
+        BatchedQueryDecorator bqd = (BatchedQueryDecorator)queries[0];
+        int batchSize = bqd.getBatchSize();
+        if (batchSize > 1) {
+          updateCounts = new int[batchSize];
+          /* In this situation there is a batch that has been rewritten. Substitute
+           * the running total returned by the database with a status code to
+           * indicate successful completion for each row the driver client added
+           * to the batch.
+           */
+          for (int i = 0; i < batchSize; i += 1 ) {
+            updateCounts[i] = Statement.SUCCESS_NO_INFO;
+          }
+          bqd.reset();
+        }
+      }
+    }
+
     if (wantsGeneratedKeysAlways) {
       generatedKeys = new ResultWrapper(((BatchResultHandler) handler).getGeneratedKeys());
     }
@@ -1376,5 +1400,9 @@ public class PgStatement implements Statement, BaseStatement {
   public ResultSet createDriverResultSet(Field[] fields, List<byte[][]> tuples)
       throws SQLException {
     return createResultSet(null, fields, tuples, null);
+  }
+
+  private void setReWriteBatchedInserts(boolean enabled) {
+    reWriteBatchedInserts = enabled;
   }
 }
