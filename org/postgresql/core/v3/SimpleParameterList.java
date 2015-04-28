@@ -39,7 +39,7 @@ class SimpleParameterList implements V3ParameterList {
         this.paramValues = new Object[paramCount];
         this.paramTypes = new int[paramCount];
         this.encoded = new byte[paramCount][];
-        this.flags = new byte[paramCount];
+        this.flags = new int[paramCount];
         this.protoConnection = protoConnection;
     }        
     
@@ -148,7 +148,9 @@ class SimpleParameterList implements V3ParameterList {
 
     public String toString(int index) {
         --index;
-        if (paramValues[index] == null)
+        if (index > (paramValues.length -1))
+            return String.format("[%1$d] Out of bounds!", index);
+        else if (paramValues[index] == null)
             return "?";
         else if (paramValues[index] == NULL_OBJECT)
             return "NULL";
@@ -368,10 +370,54 @@ class SimpleParameterList implements V3ParameterList {
     public SimpleParameterList[] getSubparams() {
         return null;
     }
+    
+    @Override
+    public Object[] getValues() {
+        return paramValues;
+    }
+    @Override
+    public int[] getParamTypes() {
+        return paramTypes;
+    }
+    @Override
+    public int[] getFlags() {
+        return flags;
+    }
+    @Override
+    public byte[][] getEncoding() {
+        return encoded;
+    }
+    
+    @Override
+    public void addAll(ParameterList list) {
+        if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
+            // only v3.SimpleParameterList is compatible with this type
+            // we need to create copies of our parameters, otherwise the values can be changed
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getFlags(), 0, this.flags, 0, spl.getInParameterCount());
+            System.arraycopy(spl.getEncoding(), 0, this.encoded, 0, spl.getInParameterCount());
+        }
+    }
+    
+    @Override
+    public void appendAll(ParameterList list) {
+        if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
+            // only v3.SimpleParameterList is compatible with this type
+            // we need to create copies of our parameters, otherwise the values can be changed
+            SimpleParameterList spl = (SimpleParameterList) list.copy();
+            int start = this.paramValues.length - spl.getInParameterCount();
+            System.arraycopy(spl.getValues(), 0, this.paramValues, start, spl.getInParameterCount());
+            System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, start, spl.getInParameterCount());
+            System.arraycopy(spl.getFlags(), 0, this.flags, start, spl.getInParameterCount());
+            System.arraycopy(spl.getEncoding(), 0, this.encoded, start, spl.getInParameterCount());
+        }
+    }
 
     private final Object[] paramValues;
     private final int[] paramTypes;
-    private final byte[] flags;
+    private final int[] flags;
     private final byte[][] encoded;
     private final ProtocolConnectionImpl protoConnection;
     

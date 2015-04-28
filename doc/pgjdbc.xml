@@ -1052,6 +1052,15 @@ openssl pkcs8 -topk8 -in client.key -out client.pk8 -outform DER -v1 PBE-SHA1-3D
         </para>
        </listitem>
       </varlistentry>
+      
+      <varlistentry>
+       <term><varname>reWriteBatchedInserts</varname> = <type>boolean</type></term>
+       <listitem>
+        <para>
+         Enable optimization to rewrite and collapse compatible INSERT statements that are batched. Default mode is false (disabled).
+        </para>
+       </listitem>
+      </varlistentry>
 
      </variablelist>
     </para>

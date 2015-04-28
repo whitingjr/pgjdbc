@@ -114,7 +114,13 @@ public class QueryExecutorImpl implements QueryExecutor {
         if (queries.isEmpty())  // Empty query.
             return EMPTY_QUERY;
         if (queries.size() == 1) {
-            return new SimpleQuery(queries.get(0), protoConnection);
+            NativeQuery nq = queries.get(0);
+            SimpleQuery sq = new SimpleQuery(nq, protoConnection);
+            if (nq.isBatchedReWriteCompatible) {
+                return new BatchedQueryDecorator(sq);
+            } else {
+                return sq;
+            }
         }
 
         // Multiple statements.
@@ -1195,6 +1201,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             // the SimpleParameterList's internal array that might be modified
             // under us.
             query.setStatementName(statementName);
+            statementName = query.getStatementName();
             query.setStatementTypes((int[])typeOIDs.clone());
         }
 
@@ -1213,6 +1220,14 @@ public class QueryExecutorImpl implements QueryExecutor {
                 sbuf.append(params.getTypeOID(i));
             }
             sbuf.append("})");
+            if (encodedStatementName != null ) {
+                sbuf.append(" encoded sn [");
+                for (byte b: encodedStatementName) {
+                    sbuf.append(Byte.toString(b));    
+                }
+                sbuf.append("] ");
+            }
+            
             logger.debug(sbuf.toString());
         }
 
@@ -1242,7 +1257,10 @@ public class QueryExecutorImpl implements QueryExecutor {
         for (int i = 1; i <= params.getParameterCount(); ++i)
             pgStream.SendInteger4(params.getTypeOID(i));
 
-        pendingParseQueue.add(query);
+        pendingParseQueue.add(new Object[]{query, query.getStatementName()});
+        if (query instanceof BatchedQueryDecorator) { // not waiting for async message
+            ((BatchedQueryDecorator) query).registerQueryParsedStatus(true);
+        }
     }
 
     private void sendBind(SimpleQuery query, SimpleParameterList params,
@@ -1567,7 +1585,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 }
             }
         }
-
+        
         if (describeStatement) {
             sendDescribeStatement(query, params, describeOnly);
             if (describeOnly)
@@ -2121,7 +2139,21 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         handler.handleCompletion();
     }
-
+    
+    private String buildParameters (int parameterCount) {
+        StringBuilder params = new StringBuilder((parameterCount*2)+2);
+        params.append(",(");
+        for (int i = 0; i < parameterCount; i += 1) {
+            if (0 == i) {
+                params.append("?");
+            } else {
+                params.append(",?");
+            }
+        }
+        params.append(")");
+        return params.toString();
+    }
+    
     /*
      * Receive the field descriptions from the back end.
      */
@@ -2260,6 +2292,24 @@ public class QueryExecutorImpl implements QueryExecutor {
             throw new IOException("unexpected transaction state in ReadyForQuery message: " + (int)tStatus);
         }
     }
+    
+    /** 
+     * Update the mapping of parameters to statements.
+     * @param statementParamMap
+     * @param totalParameters
+     */
+    private void updateStatementParamMapping(int statementCount, List statementParamMap) {
+        if (statementCount != statementParamMap.size()) {
+            // new statement
+            List statement = new ArrayList<>();
+            statementParamMap.add(statement);
+            statement.add(statementCount);
+        }
+        else {
+            ((List)statementParamMap.get(statementCount-1)).add(statementCount);
+        }
+        
+    }
 
     private final Deque<SimpleQuery> pendingParseQueue = new ArrayDeque<SimpleQuery>();
     private final Deque<Portal> pendingBindQueue = new ArrayDeque<Portal>();
@@ -2283,7 +2333,7 @@ public class QueryExecutorImpl implements QueryExecutor {
      */
     private int estimatedReceiveBufferBytes = 0;
 
-    private final SimpleQuery beginTransactionQuery = new SimpleQuery(new NativeQuery("BEGIN", new int[0]), null);
+    private final SimpleQuery beginTransactionQuery = new SimpleQuery(new NativeQuery("BEGIN", new int[0], false), null);
 
-    private final SimpleQuery EMPTY_QUERY = new SimpleQuery(new NativeQuery("", new int[0]), null);
+    private final SimpleQuery EMPTY_QUERY = new SimpleQuery(new NativeQuery("", new int[0], false), null);
 }

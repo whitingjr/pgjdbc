@@ -17,7 +17,7 @@ import java.lang.ref.PhantomReference;
  * This also holds the state of any associated server-side
  * named statement. We use a PhantomReference managed by
  * the QueryExecutor to handle statement cleanup.
- * 
+ *
  * @author Oliver Jowett (oliver@opencloud.com)
  */
 class SimpleQuery implements V3Query {
@@ -102,9 +102,30 @@ class SimpleQuery implements V3Query {
         return nativeQuery.nativeSql;
     }
 
+    // unmark '??' in fragments back to '?'
+    String[] unmarkDoubleQuestion(String[] fragments, ProtocolConnectionImpl protoConnection)
+    {
+        if (fragments != null && protoConnection != null)
+        {
+            boolean standardConformingStrings = protoConnection.getStandardConformingStrings();
+            for(int i=0; i< fragments.length; i++)
+                if (fragments[i] != null)
+                {
+                    fragments[i] = Parser.unmarkDoubleQuestion(fragments[i], standardConformingStrings);
+                }
+        }
+
+        return fragments;
+    }
+
     void setStatementName(String statementName) {
-        this.statementName = statementName;
-        this.encodedStatementName = Utils.encodeUTF8(statementName);
+        if (statementName == null) {
+            this.statementName = null;
+            this.encodedStatementName = null;
+        } else {
+            this.statementName = statementName;
+            this.encodedStatementName = Utils.encodeUTF8(statementName);
+        }
     }
 
     void setStatementTypes(int[] paramTypes) {
@@ -123,6 +144,7 @@ class SimpleQuery implements V3Query {
         if (statementName == null)
             return false; // Not prepared.
 
+        assert paramTypes.length == preparedTypes.length : String.format("paramTypes:%1$d preparedTypes:%2$d", paramTypes.length, preparedTypes.length);
         // Check for compatible types.
         for (int i = 0; i < paramTypes.length; ++i)
             if (paramTypes[i] != Oid.UNSPECIFIED && paramTypes[i] != preparedTypes[i])
@@ -240,13 +262,35 @@ class SimpleQuery implements V3Query {
         cachedMaxResultRowSize = null;
     }
 
+    @Override
+    public boolean isStatementReWritableInsert() {
+        return false;
+    }
+
+    @Override
+    public int getBatchSize() {
+        return batchedCount;
+    }
+    @Override
+    public void incrementBatchSize() {
+        batchedCount += 1;
+    }
+
+    public void resetBatchedCount() {
+        batchedCount = 0;
+    }
+
+    public NativeQuery getNativeQuery() {
+        return nativeQuery;
+    }
+
     private final NativeQuery nativeQuery;
 
     private final ProtocolConnectionImpl protoConnection;
     private String statementName;
     private byte[] encodedStatementName;
     /**
-     * The stored fields from previous execution or describe of a prepared 
+     * The stored fields from previous execution or describe of a prepared
      * statement. Always null for non-prepared statements.
      */
     private Field[] fields;
@@ -259,7 +303,7 @@ class SimpleQuery implements V3Query {
 
     private Integer cachedMaxResultRowSize;
 
+    private int batchedCount = 0;
+
     final static SimpleParameterList NO_PARAMETERS = new SimpleParameterList(0, null);
 }
-
-

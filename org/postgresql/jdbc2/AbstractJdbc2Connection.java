@@ -114,6 +114,8 @@ public abstract class AbstractJdbc2Connection implements BaseConnection
         }
     }
 
+    private boolean reWriteBatchedInserts = false;
+
     //
     // Ctor.
     //
@@ -288,6 +290,7 @@ public abstract class AbstractJdbc2Connection implements BaseConnection
                     }
                 }
         );
+        this.reWriteBatchedInserts = PGProperty.REWRITE_BATCHED_INSERTS.getBoolean(info);
     }
 
     private Set<Integer> getOidSet(String oidList) throws PSQLException {
@@ -1321,6 +1324,16 @@ public abstract class AbstractJdbc2Connection implements BaseConnection
     public void setDisableColumnSanitiser(boolean disableColumnSanitiser)
     {
         this.disableColumnSanitiser = disableColumnSanitiser;
+    }
+
+    @Override
+    public boolean isReWriteBatchedInsertsEnabled() {
+        
+        return this.reWriteBatchedInserts;
+    }
+    
+    public void setReWriteBatchedInserts(boolean reWrite) {
+        this.reWriteBatchedInserts = reWrite;
     }
 
     protected void abort()

@@ -9,7 +9,9 @@
 package org.postgresql.core.v2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
 import org.postgresql.core.*;
 
 /**
@@ -54,10 +56,33 @@ class V2Query implements Query {
         return nativeQuery.nativeSql.isEmpty();
     }
 
+    @Override
+    public boolean isStatementReWritableInsert() {
+        return statementReWritableInsert;
+    }
+
+    public void setStatementReWritableInsert(boolean canReWrite) {
+        statementReWritableInsert = canReWrite;
+    }
+
+    @Override
+    public void incrementBatchSize() {
+        batchSize += 1;
+    }
+
+    @Override
+    public int getBatchSize() {
+        return batchSize;
+    }
+
     private static final ParameterList NO_PARAMETERS = new SimpleParameterList(0, false);
 
     private final NativeQuery nativeQuery;
-    
+
     private final boolean useEStringSyntax; // whether escaped string syntax should be used
+
+    private boolean statementReWritableInsert;
+
+    private int batchSize = 0;
 }
 

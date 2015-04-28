@@ -75,6 +75,10 @@ public class Jdbc2TestSuite extends TestSuite
         suite.addTestSuite(BatchExecuteTest.class);
         suite.addTestSuite(BatchExecuteBinaryTest.class);
 
+        suite.addTestSuite(BatchedInsertReWriteEnabledTest.class);
+        suite.addTestSuite(BatchedInsertStatementPreparingTest.class);
+        suite.addTestSuite(DeepBatchedInsertStatementTest.class);
+        suite.addTestSuite(BatchedInsertDoubleRowInSingleBatch.class);
 
         // Other misc tests, based on previous problems users have had or specific
         // features some applications require.
@@ -104,6 +108,9 @@ public class Jdbc2TestSuite extends TestSuite
         suite.addTestSuite(ConnectTimeoutTest.class);
 
         suite.addTestSuite(PGPropertyTest.class);
+
+        suite.addTestSuite(V2ParameterListTests.class);
+        suite.addTestSuite(V3ParameterListTests.class);
 
         Connection conn = TestUtil.openDB();
         if (TestUtil.isProtocolVersion(conn, 3)) {

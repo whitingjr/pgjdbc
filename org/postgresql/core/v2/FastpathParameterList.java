@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.StreamWrapper;
@@ -163,6 +164,39 @@ class FastpathParameterList implements ParameterList {
 
     public void setBinaryParameter(int index, byte[] value, int oid) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object[] getValues() {
+        return this.paramValues;
+    }
+
+    @Override
+    /**
+     * Replace all parameters with new values in provided list.
+     */
+    public void addAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+            // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list;
+            Arrays.fill(paramValues, null);
+            System.arraycopy(spl.getValues(), 0, paramValues, 0, 
+                spl.getInParameterCount());
+        }
+    }
+    
+    @Override
+    /**
+     * Append parameters to the list.  
+     */
+    public void appendAll(ParameterList list) {
+        if (list instanceof SimpleParameterList ) {
+            // only v2.SimpleParameterList is compatible with this type
+            SimpleParameterList spl = (SimpleParameterList) list;
+            int count = spl.getInParameterCount();
+            System.arraycopy(spl.getValues(), 0, paramValues, 
+                getInParameterCount()-count, count);
+        }
     }
 
     private final Object[] paramValues;

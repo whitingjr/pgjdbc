@@ -44,6 +44,10 @@ interface V3ParameterList extends ParameterList {
      */
     SimpleParameterList[] getSubparams();
     
-   
+    int[] getParamTypes();
+    
+    int[] getFlags();
+    
+    byte[][] getEncoding();
     
 }

@@ -76,6 +76,10 @@ public class Parser {
 
             case '(':
                 inParen++;
+                if (isCurrentReWriteCompatible) {/* //disables rewrite for
+                multi value blocks */
+                    isCurrentReWriteCompatible = false;
+                }
                 break;
 
             case ')':
@@ -120,12 +124,13 @@ public class Parser {
                         if (nativeQueries == null)
                             nativeQueries = new ArrayList<NativeQuery>();
 
-                        nativeQueries.add(new NativeQuery(nativeSql.toString(), toIntArray(bindPositions)));
+                        nativeQueries.add(new NativeQuery(nativeSql.toString(), toIntArray(bindPositions),isCurrentReWriteCompatible));
                     }
                     // Prepare for next query
                     if (bindPositions != null)
                         bindPositions.clear();
                     nativeSql.setLength(0);
+                    isCurrentReWriteCompatible=false;
                 }
                 break;
 
@@ -140,7 +145,7 @@ public class Parser {
         if (nativeSql.length() == 0)
             return nativeQueries != null ? nativeQueries : Collections.<NativeQuery>emptyList();
 
-        NativeQuery lastQuery = new NativeQuery(nativeSql.toString(), toIntArray(bindPositions));
+        NativeQuery lastQuery = new NativeQuery(nativeSql.toString(), toIntArray(bindPositions), isCurrentReWriteCompatible);
 
         if (nativeQueries == null)
             return Collections.singletonList(lastQuery);
@@ -334,6 +339,43 @@ public class Parser {
             }
         }
         return offset;
+    }
+
+    /**
+     * Parse string to check presence of INSERT keyword.
+     * @param query char[] of the query statement
+     * @param offset position of query to start checking
+     * @param isUpper is the text expected to be upper/lower case
+     * @return boolean indicates presence of word
+     */
+    public static boolean parseInsertKeyword(final char[] query, int offset, boolean isUpper) {
+        if (query.length < (offset+7))
+            return false;
+
+        if (isUpper && query[offset] == 'I' && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
+            return true;
+        }
+        else if ( !isUpper &&  query[offset] == 'i' &&  query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Parse string to check presence of RETURNING keyword
+     * @param query char[] of the query statement
+     * @param offset position of query to start checking
+     * @param isUpper is the text expected to be upper/lower case
+     * @return boolean indicates presence of word
+     */
+    public static boolean parseReturningKeyword(final char[] query, int offset, boolean isUpper) {
+        if ( isUpper && query[offset] == 'R' && query[offset+1] == 'E' && query[offset+2] == 'T' && query[offset+3] == 'U' && query[offset+4] == 'R' && query[offset+5] == 'N' && query[offset+6] == 'I' && query[offset+7] == 'N' && query[offset+8] == 'G' ) { 
+            return true;
+        }
+        else if ( !isUpper && query[offset] == 'r' && query[offset+1] == 'e' && query[offset+2] == 't' && query[offset+3] == 'u' && query[offset+4] == 'r' && query[offset+5] == 'n' && query[offset+6] == 'i' && query[offset+7] == 'n' && query[offset+8] == 'g' ) {
+            return true;
+        }
+        return false;
     }
 
     /**

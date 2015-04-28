@@ -37,6 +37,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -49,6 +51,7 @@ import org.postgresql.core.BaseConnection;
 import org.postgresql.core.BaseStatement;
 import org.postgresql.core.CachedQuery;
 import org.postgresql.core.Field;
+import org.postgresql.core.NativeQuery;
 import org.postgresql.core.Oid;
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
@@ -59,6 +62,7 @@ import org.postgresql.core.ServerVersion;
 import org.postgresql.core.v3.QueryExecutorImpl;
 import org.postgresql.largeobject.LargeObject;
 import org.postgresql.largeobject.LargeObjectManager;
+import org.postgresql.core.v3.BatchedQueryDecorator;
 import org.postgresql.util.ByteConverter;
 import org.postgresql.util.GT;
 import org.postgresql.util.HStoreConverter;
@@ -68,6 +72,7 @@ import org.postgresql.util.PGTime;
 import org.postgresql.util.PGTimestamp;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
+import static org.postgresql.core.Oid.UNSPECIFIED;
 
 /**
  * This class defines methods of the jdbc2 specification.
@@ -181,7 +186,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     private static final short ESC_FUNCTION = 4;
     private static final short ESC_OUTERJOIN = 5;
     private static final short ESC_ESCAPECHAR = 7;
-    
+
     protected final CachedQuery preparedQuery;        // Query fragments for prepared statement.
     protected final ParameterList preparedParameters; // Parameter values for prepared statement.
     protected Query lastSimpleQuery;
@@ -2965,11 +2970,30 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
 	} finally {
 	    killTimerTask();
 	}
+	
+        int batchSize = queries[0].getBatchSize();
+        if (queries[0].isStatementReWritableInsert() && batchSize > 1 ) 
+        {
+            updateCounts = new int[batchSize];
+            /* In this situation there is a batch that has been rewritten. Substitute
+            * the running total returned by the database with a status code to
+            * indicate successful completion for each row the driver client added
+            * to the batch.
+            */
+            for (int i = 0; i < batchSize; i += 1 ) 
+            {
+                updateCounts[i] = Statement.SUCCESS_NO_INFO;
+            }
+            if (queries[0] instanceof BatchedQueryDecorator) 
+            {
+                ((BatchedQueryDecorator) queries[0]).reset(); // only BQD when batchSize == 1
+            }
+        }
 
         if (wantsGeneratedKeysAlways) {
             generatedKeys = new ResultWrapper(((BatchResultHandler)handler).getGeneratedKeys());
         }
-            
+
         return updateCounts;
     }
 
@@ -3057,10 +3081,33 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             batchStatements = new ArrayList<Query>();
             batchParameters = new ArrayList<ParameterList>();
         }
+        /** On the initial pass assume no batch re-write is going to occur.
+         * Following passes check for basic compatibility to re-write. When
+         * compatible then wrap the preparedQuery and collapse the statements.
+         */
+        if (batchStatements.size() == 0) {
+            batchStatements.add(preparedQuery.query);
+            // we need to create copies of our parameters, otherwise the values can be changed
+            batchParameters.add(preparedParameters.copy());
+        } else {
+            if (connection.isReWriteBatchedInsertsEnabled() && preparedQuery.query.isStatementReWritableInsert()) {
+                if ( !(preparedQuery.query instanceof BatchedQueryDecorator) ) {
+                    preparedQuery.query = new BatchedQueryDecorator(preparedQuery.query) ;
+                }
+                if (!(batchStatements.get(0) instanceof BatchedQueryDecorator) ) {
+                    batchStatements.remove(0);
+                    batchStatements.add(preparedQuery.query);
+                }
 
-        // we need to create copies of our parameters, otherwise the values can be changed
-        batchStatements.add(preparedQuery.query);
-        batchParameters.add(preparedParameters.copy());
+                reWrite(batchStatements, batchParameters, preparedParameters);
+            }
+            else {
+                // we need to create copies of our parameters, otherwise the values can be changed
+                batchStatements.add(preparedQuery.query);
+                batchParameters.add(preparedParameters.copy());
+            }
+        }
+
     }
 
     public ResultSetMetaData getMetaData() throws SQLException
@@ -3620,6 +3667,52 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
 
     protected boolean getForceBinaryTransfer()
     {
-        return forceBinaryTransfers;        
+        return forceBinaryTransfers;       
+    }
+
+    /**
+     * Purpose of this method is to rewrite the prior Query sql with additional
+     * paramaterized fields. Add parameters of the current list to prior.
+     * @param batchStatements all the statements
+     * @param batchParameters all the parameters
+     * @param preparedParameters all the prepared parameters
+     */
+    private void reWrite(List batchStatements,
+            List batchParameters, ParameterList preparedParameters) {
+        int tail = batchStatements.size()-1;
+        Query prior = (Query)batchStatements.get(tail);
+        BatchedQueryDecorator decoratedQuery = null;
+        if (prior instanceof BatchedQueryDecorator) {
+            decoratedQuery = (BatchedQueryDecorator)prior;
+        } else {
+            batchStatements.remove(tail);
+            decoratedQuery = new BatchedQueryDecorator(prior);
+            batchStatements.add(decoratedQuery);
+        }
+        decoratedQuery.incrementBatchSize();
+
+        // create a new paramlist that is sized correctly
+        ParameterList replacement = decoratedQuery.createParameterList();
+        ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size()-1);
+        replacement.addAll(old);
+        replacement.appendAll(preparedParameters);
+        batchParameters.add(replacement);
+
+        // resize and populate .fields and .preparedTypes meta data
+        int singleBatchparamCount = replacement.getParameterCount()/decoratedQuery.getBatchSize();
+        Field[] oldFields = decoratedQuery.getFields();
+        if (oldFields != null && oldFields.length > 0
+            && oldFields.length == singleBatchparamCount) {
+            int fieldsReplacementSize = oldFields.length + singleBatchparamCount;
+            Field[] replacementFields = Arrays.copyOf(oldFields, fieldsReplacementSize);
+            System.arraycopy(oldFields, 0, replacementFields, oldFields.length, singleBatchparamCount);
+            decoratedQuery.setFields(replacementFields);
+        }
+
+        int[] userTypeInformation = preparedParameters.getTypeOIDs();
+        if (userTypeInformation != null && userTypeInformation.length > 0
+                && userTypeInformation.length == singleBatchparamCount) {
+            decoratedQuery.setStatementTypes(userTypeInformation);
+        }
     }
 }
