@@ -11,6 +11,8 @@ import java.sql.Connection;
 
 import junit.framework.TestSuite;
 
+import org.postgresql.core.v2.V2ParameterListTests;
+import org.postgresql.core.v3.V3ParameterListTests;
 import org.postgresql.test.TestUtil;
 
 /*
@@ -98,6 +100,9 @@ public class Jdbc2TestSuite extends TestSuite
         suite.addTestSuite(ConnectTimeoutTest.class);
 
         suite.addTestSuite(PGPropertyTest.class);
+        
+        suite.addTestSuite(V2ParameterListTests.class);
+        suite.addTestSuite(V3ParameterListTests.class);
 
         Connection conn = TestUtil.openDB();
         if (TestUtil.isProtocolVersion(conn, 3)) {
