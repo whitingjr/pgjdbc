@@ -261,8 +261,14 @@ public class QueryExecutorImpl implements QueryExecutor {
         ((V3ParameterList)parameters).convertFunctionOutParameters();
 
         // Check parameters are all set..
-        if (!describeOnly)
-            ((V3ParameterList)parameters).checkAllParametersSet();
+        if (!describeOnly){
+            try {
+                ((V3ParameterList)parameters).checkAllParametersSet();
+            } catch (SQLException sqle) {
+                juLogger.severe(String.format("sql[%1$s] of frag size[%$2d] only had [%3$d] values.", query.getFragments()[0], query.getFragments().length, parameters.getValues().length) );
+                throw sqle;
+            }
+        }
 
         try
         {
@@ -2433,6 +2439,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     private final PGStream pgStream;
     private final Logger logger;
     private final boolean allowEncodingChanges;
+    private final static java.util.logging.Logger juLogger = java.util.logging.Logger.getLogger(QueryExecutorImpl.class.getName());
 
     /**
      * The estimated server response size since we last consumed the input stream

@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.TimerTask;
 import java.util.TimeZone;
 import java.util.Calendar;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.postgresql.Driver;
 import org.postgresql.largeobject.*;
@@ -50,6 +52,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     protected int fetchdirection = ResultSet.FETCH_FORWARD;  // fetch direction hint (currently ignored)
     private volatile TimerTask cancelTimerTask = null;
     private StatementComparator comparator = null;
+    private static final Logger logger = Logger.getLogger(AbstractJdbc2Statement.class.getName());
 
     /**
      * Does the caller of execute/executeUpdate want generated keys for this
@@ -2863,6 +2866,9 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         // Construct query/parameter arrays.
         Query[] queries = (Query[])batchStatements.toArray(new Query[batchStatements.size()]);
         ParameterList[] parameterLists = (ParameterList[])batchParameters.toArray(new ParameterList[batchParameters.size()]);
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest(String.format("size of bs[%1$d], bp[%2$d], queries[%3$d], pl[%4$d],", batchStatements.size(), batchParameters.size(), queries.length, parameterLists.length));
+        }
         batchStatements.clear();
         batchParameters.clear();
 

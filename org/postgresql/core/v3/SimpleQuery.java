@@ -11,6 +11,7 @@ package org.postgresql.core.v3;
 import org.postgresql.core.*;
 
 import java.lang.ref.PhantomReference;
+import java.util.logging.Level;
 
 /**
  * V3 Query implementation for a single-statement query.
@@ -21,6 +22,8 @@ import java.lang.ref.PhantomReference;
  * @author Oliver Jowett (oliver@opencloud.com)
  */
 class SimpleQuery implements V3Query {
+    
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(SimpleQuery.class.getName());
 
     SimpleQuery(String[] fragments, ProtocolConnectionImpl protoConnection)
     {
@@ -47,6 +50,14 @@ class SimpleQuery implements V3Query {
         {
             if (parameters == null)
                 sbuf.append('?');
+            else if (i > parameters.getValues().length) {
+                /* ok, we have this wacky situation. trying to toString a parameter that 
+                does not exist. the number of fragments indicate it should exist. */
+                if (logger.isLoggable(Level.FINEST)){
+                    logger.finest(String.format("fragments length[%1$d], initial frag[%2$s]", fragments.length, fragments[0]));
+                }
+                sbuf.append("Attempted to add a parameter that does not exist.");
+            }
             else
                 sbuf.append(parameters.toString(i));
             sbuf.append(fragments[i]);
