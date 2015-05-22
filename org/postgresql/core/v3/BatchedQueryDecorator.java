@@ -1,24 +1,27 @@
 package org.postgresql.core.v3;
 
 import org.postgresql.core.ParameterList;
-import org.postgresql.core.ProtocolConnection;
 import org.postgresql.core.Query;
 
 /**
  * Purpose of this object is to provide batched query re write 
  * behaviour.
+ * Responsibility for tracking the batch size and implement the clean up
+ * of the query fragments after the batch execute is complete.
+ * All other operations are passed back to the SimpleQuery implementation.
  * @author Jeremy Whiting
  *
  */
-public class BatchedQueryDecorator implements Query {
+public class BatchedQueryDecorator extends SimpleQuery {
 
     private SimpleQuery query = null;
-    private String[] batchFragments = null;
     private final String[] originalFragments ;
-    private int batchedCount = 0; 
+    private int batchedCount = 0;
     
     public BatchedQueryDecorator(Query q) {
+        super(new String[0], null); // then protoConn is off limits. making a constructor call to SQ very difficult.
         this.originalFragments = q.getFragments();
+        this.batchedCount = q.getBatchSize();
         if (q instanceof SimpleQuery) {
             this.query = (SimpleQuery)q;
         }
@@ -32,7 +35,7 @@ public class BatchedQueryDecorator implements Query {
     
     @Override
     public String[] getFragments() {
-        return this.batchFragments;
+        return this.query.getFragments();
     }
     
     @Override
@@ -52,7 +55,8 @@ public class BatchedQueryDecorator implements Query {
             replacement[pos] = additional[i];
             pos += 1;
         }
-        this.batchFragments = replacement;
+        this.query.clearFragments();
+        this.query.addQueryFragments(replacement);
     }
     
     @Override
@@ -92,5 +96,10 @@ public class BatchedQueryDecorator implements Query {
     @Override
     public void clearFragments() {
         this.query.clearFragments();
+    }
+    
+    @Override
+    public SimpleQuery[] getSubqueries() {
+        return this.query.getSubqueries();
     }
 }

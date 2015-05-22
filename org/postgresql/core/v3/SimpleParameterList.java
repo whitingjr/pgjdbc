@@ -148,7 +148,9 @@ class SimpleParameterList implements V3ParameterList {
 
     public String toString(int index) {
         --index;
-        if (paramValues[index] == null)
+        if (index > (paramValues.length -1))
+            return String.format("[%1$d] Out of bounds!", index);
+        else if (paramValues[index] == null)
             return "?";
         else if (paramValues[index] == NULL_OBJECT)
             return "NULL";

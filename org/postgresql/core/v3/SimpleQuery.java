@@ -282,7 +282,7 @@ class SimpleQuery implements V3Query {
     
     @Override
     public void clearFragments() {
-        //no-op
+        this.fragments = new String[0];
     }
 
     private String[] fragments;

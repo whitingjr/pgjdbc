@@ -52,9 +52,6 @@ public class BatchedInsertReWriteEnabled extends TestCase{
         }
     }
     
-    
-    
-
     public BatchedInsertReWriteEnabled(String name)
     {
         super(name);

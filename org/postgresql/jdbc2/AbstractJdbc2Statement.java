@@ -26,6 +26,7 @@ import org.postgresql.Driver;
 import org.postgresql.largeobject.*;
 import org.postgresql.core.*;
 import org.postgresql.core.types.*;
+import org.postgresql.core.v3.BatchedQueryDecorator;
 import org.postgresql.util.ByteConverter;
 import org.postgresql.util.HStoreConverter;
 import org.postgresql.util.PGBinaryObject;
@@ -2968,7 +2969,10 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         if (wantsGeneratedKeysAlways) {
             generatedKeys = new ResultWrapper(((BatchResultHandler)handler).getGeneratedKeys());
         }
-            
+
+        if (this.preparedQuery instanceof BatchedQueryDecorator) {
+            ((BatchedQueryDecorator) this.preparedQuery).reset();
+        }
         return updateCounts;
     }
 
@@ -3564,21 +3568,30 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param currentParameters
      */
     private Query reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
-        Query prior = (Query)batchStatements.get(batchStatements.size()-1);
+        int tail = batchStatements.size()-1;
+        Query prior = (Query)batchStatements.get(tail);
+        BatchedQueryDecorator decoratedQuery = null;
+        if (!(prior instanceof BatchedQueryDecorator)) {
+            batchStatements.remove(tail);
+            decoratedQuery = new BatchedQueryDecorator(prior);
+            batchStatements.add(decoratedQuery);
+        } else {
+            decoratedQuery = (BatchedQueryDecorator)prior;
+        }
         // modify last fragment to begin next parameter placement
-        String[] fragments = prior.getFragments();
+        String[] fragments = decoratedQuery.getFragments();
         fragments[fragments.length -1] = fragments[fragments.length -1] + ",(";
         
-        prior.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
+        decoratedQuery.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
         // create a new paramlist that is sized correctly
-        ParameterList replacement = prior.createParameterList();
+        ParameterList replacement = decoratedQuery.createParameterList();
         ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size()-1);
         replacement.addAll(old);
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
-        prior.incrementBatchSize();
+        decoratedQuery.incrementBatchSize();
         
-        return prior;
+        return decoratedQuery;
     }
     
     /**
@@ -3586,7 +3599,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * @param paramCount
      * @return
      */
-    
     private String[] formatQueryFragments( int paramCount) {
         String[] fragments = new String[paramCount];
         int end = paramCount-1;
