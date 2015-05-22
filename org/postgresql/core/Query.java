@@ -86,4 +86,9 @@ public interface Query {
      */
     public int getBatchSize();
  
+    /**
+     * 
+     */
+    public void clearFragments();
+    
 }

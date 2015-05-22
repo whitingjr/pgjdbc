@@ -11,6 +11,7 @@ package org.postgresql.core.v2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import org.postgresql.core.*;
 
 /**
@@ -144,6 +145,11 @@ class V2Query implements Query {
     @Override
     public int getBatchSize() {
         return this.batchSize;
+    }
+    
+    @Override
+    public void clearFragments() {
+        //no-op
     }
 
     private static final ParameterList NO_PARAMETERS = new SimpleParameterList(0, false);

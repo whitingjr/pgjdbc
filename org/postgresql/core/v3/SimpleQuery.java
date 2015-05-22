@@ -264,7 +264,6 @@ class SimpleQuery implements V3Query {
             replacement[i] = this.fragments[i];
             pos += 1;
         }
-        int end = this.fragments.length + additional.length + 1;
         for (int i = 0; i < additional.length ; i += 1) {
             replacement[pos] = additional[i];
             pos += 1;
@@ -274,11 +273,16 @@ class SimpleQuery implements V3Query {
     
     @Override
     public int getBatchSize() {
-        return this.batchSize;
+        return -1;
     }
     @Override
     public void incrementBatchSize() {
-        this.batchSize += 1;
+        //no-op
+    }
+    
+    @Override
+    public void clearFragments() {
+        //no-op
     }
 
     private String[] fragments;
@@ -301,7 +305,6 @@ class SimpleQuery implements V3Query {
     
     boolean statementReWritableInsert = false;
     
-    private int batchSize = 0;
 }
 
 

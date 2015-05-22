@@ -31,15 +31,19 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 1);
             pstmt.addBatch(); //statement one
-            pstmt.setInt(1, 2);
-            pstmt.setInt(2, 2);
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
             pstmt.addBatch();//statement two, this should be collapsed into prior statement
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();//statement three, this should be collapsed into prior statement
             int[] outcome = pstmt.executeBatch();
 
             assertNotNull(outcome);
-            assertEquals(2, outcome.length);
+            assertEquals(3, outcome.length);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
         } catch (SQLException sqle) {
             fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
         } finally {
@@ -47,6 +51,7 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             con.rollback();
         }
     }
+    
     
     
 
