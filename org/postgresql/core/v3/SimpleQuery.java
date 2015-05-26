@@ -47,6 +47,8 @@ class SimpleQuery implements V3Query {
         {
             if (parameters == null)
                 sbuf.append('?');
+            else if (i > parameters.getParameterCount())
+                sbuf.append('?');
             else
                 sbuf.append(parameters.toString(i));
             sbuf.append(fragments[i]);

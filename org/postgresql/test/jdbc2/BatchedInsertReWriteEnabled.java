@@ -44,7 +44,43 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
         } catch (SQLException sqle) {
-            fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
+            fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
+        } finally {
+//            if (null != pstmt) {pstmt.close();}
+//            con.rollback();
+        }
+        
+        /* Now check the ps can be reused. The batched statement should be
+         * reset and have no knowledge of prior use.
+         */
+        try {
+            /*
+             * The connection is configured so the batch rewrite optimization
+             * is enabled. See setUp()
+             */
+//            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();
+            pstmt.setInt(1, 7);
+            pstmt.setInt(2, 8);
+            pstmt.addBatch();
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(4, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
         } finally {
             if (null != pstmt) {pstmt.close();}
             con.rollback();

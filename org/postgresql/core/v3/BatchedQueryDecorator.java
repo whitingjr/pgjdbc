@@ -1,7 +1,5 @@
 package org.postgresql.core.v3;
 
-import java.util.Arrays;
-
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
 
