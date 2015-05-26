@@ -2,7 +2,6 @@ package org.postgresql.test.jdbc2;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
@@ -29,7 +28,7 @@ public class BatchedInsertReWriteEnabled extends TestCase{
              */
             pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
             pstmt.setInt(1, 1);
-            pstmt.setInt(2, 1);
+            pstmt.setInt(2, 2);
             pstmt.addBatch(); //statement one
             pstmt.setInt(1, 3);
             pstmt.setInt(2, 4);

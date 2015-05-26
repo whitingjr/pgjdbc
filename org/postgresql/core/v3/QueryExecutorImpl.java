@@ -12,7 +12,6 @@ import org.postgresql.PGProperty;
 import org.postgresql.core.*;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Properties;

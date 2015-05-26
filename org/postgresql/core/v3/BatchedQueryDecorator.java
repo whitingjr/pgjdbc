@@ -1,14 +1,17 @@
 package org.postgresql.core.v3;
 
+import java.util.Arrays;
+
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
 
 /**
- * Purpose of this object is to provide batched query re write 
- * behaviour.
- * Responsibility for tracking the batch size and implement the clean up
+ * Purpose of this object is to support batched query re write 
+ * behaviour. Responsibility for tracking the batch size and implement the clean up
  * of the query fragments after the batch execute is complete.
  * All other operations are passed back to the SimpleQuery implementation.
+ * This object extends rather than composed because type QueryExecutorImpl.sendQuery 
+ * relies on SimpleQuery.
  * @author Jeremy Whiting
  *
  */
@@ -19,8 +22,9 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private int batchedCount = 0;
     
     public BatchedQueryDecorator(Query q) {
-        super(new String[0], null); // then protoConn is off limits. making a constructor call to SQ very difficult.
-        this.originalFragments = q.getFragments();
+        super(new String[0], null); // protoConn is encapsulated. making a constructor call to SQ with object references difficult.
+        this.originalFragments = new String[q.getFragments().length] ;
+        System.arraycopy(q.getFragments(), 0, this.originalFragments, 0, q.getFragments().length);
         this.batchedCount = q.getBatchSize();
         if (q instanceof SimpleQuery) {
             this.query = (SimpleQuery)q;

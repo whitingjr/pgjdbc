@@ -2964,15 +2964,13 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             for (int i = 0; i < batchSize; i += 1 ) {
                 updateCounts[i] = Statement.SUCCESS_NO_INFO;
             }
+            ((BatchedQueryDecorator) queries[0]).reset(); // only BQD when batchSize > 1 
         }
 
         if (wantsGeneratedKeysAlways) {
             generatedKeys = new ResultWrapper(((BatchResultHandler)handler).getGeneratedKeys());
         }
 
-        if (queries[0] instanceof BatchedQueryDecorator) {
-            ((BatchedQueryDecorator) queries[0]).reset();
-        }
         return updateCounts;
     }
 
