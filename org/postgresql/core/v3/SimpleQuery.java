@@ -273,16 +273,20 @@ class SimpleQuery implements V3Query {
     
     @Override
     public int getBatchSize() {
-        return -1;
+        return this.batchedCount;
     }
     @Override
     public void incrementBatchSize() {
-        //no-op
+        this.batchedCount += 1;
     }
     
     @Override
     public void clearFragments() {
         this.fragments = new String[0];
+    }
+    
+    public void resetBatchedCount() {
+        this.batchedCount = 0;
     }
 
     private String[] fragments;
@@ -300,6 +304,8 @@ class SimpleQuery implements V3Query {
     private int[] preparedTypes;
 
     private Integer cachedMaxResultRowSize;
+    
+    private int batchedCount = 0;
 
     final static SimpleParameterList NO_PARAMETERS = new SimpleParameterList(0, null);
     

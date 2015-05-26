@@ -2970,8 +2970,8 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             generatedKeys = new ResultWrapper(((BatchResultHandler)handler).getGeneratedKeys());
         }
 
-        if (this.preparedQuery instanceof BatchedQueryDecorator) {
-            ((BatchedQueryDecorator) this.preparedQuery).reset();
+        if (queries[0] instanceof BatchedQueryDecorator) {
+            ((BatchedQueryDecorator) queries[0]).reset();
         }
         return updateCounts;
     }
@@ -3571,12 +3571,12 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         int tail = batchStatements.size()-1;
         Query prior = (Query)batchStatements.get(tail);
         BatchedQueryDecorator decoratedQuery = null;
-        if (!(prior instanceof BatchedQueryDecorator)) {
+        if (prior instanceof BatchedQueryDecorator) {
+            decoratedQuery = (BatchedQueryDecorator)prior;
+        } else {
             batchStatements.remove(tail);
             decoratedQuery = new BatchedQueryDecorator(prior);
             batchStatements.add(decoratedQuery);
-        } else {
-            decoratedQuery = (BatchedQueryDecorator)prior;
         }
         // modify last fragment to begin next parameter placement
         String[] fragments = decoratedQuery.getFragments();

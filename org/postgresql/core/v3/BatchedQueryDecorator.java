@@ -31,6 +31,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         this.query.clearFragments();
         this.query.addQueryFragments(this.originalFragments);
         this.batchedCount = 0;
+        this.query.resetBatchedCount();
     }
     
     @Override
