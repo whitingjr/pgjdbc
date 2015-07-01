@@ -121,7 +121,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         int fragmentStart = 0;
         int inParen = 0;
         boolean isCurrentReWriteCompatible = false;
-        int paramCount = 0;
 
         boolean standardConformingStrings = protoConnection.getStandardConformingStrings();
         
@@ -170,7 +169,6 @@ public class QueryExecutorImpl implements QueryExecutor {
                         fragmentStart = i + 1;
                     }
                 }
-                paramCount += 1;
                 break;
 
             case ';':
@@ -184,11 +182,11 @@ public class QueryExecutorImpl implements QueryExecutor {
                 }
                 break;
             case 'i':
-                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, false) != -1);
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, false));
                 break;
 
             case 'I':
-                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, true) != -1);
+                isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, true));
                 break;
                 
             case 'r':
@@ -1298,11 +1296,15 @@ public class QueryExecutorImpl implements QueryExecutor {
         if (logger.logDebug())
         {
             StringBuilder sbuf = new StringBuilder(" FE=> Parse(stmt=" + statementName + ",query=\"");
-            for (int i = 0; i < fragments.length; ++i)
-            {
-                if (i > 0)
-                    sbuf.append("$").append(i);
-                sbuf.append(fragments[i]);
+            if (fragments != null) {
+                for (int i = 0; i < fragments.length; ++i)
+                {
+                    if (i > 0)
+                        sbuf.append("$").append(i);
+                    sbuf.append(fragments[i]);
+                }
+            } else {
+                sbuf.append("Empty query fragments reference. Something went wrong.");
             }
             sbuf.append("\",oids={");
             for (int i = 1; i <= params.getParameterCount(); ++i)

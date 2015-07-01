@@ -22,16 +22,16 @@ import java.lang.ref.PhantomReference;
  */
 class SimpleQuery implements V3Query {
 
-    SimpleQuery(String[] fragments, ProtocolConnectionImpl protoConnection)
+    SimpleQuery(String[] fragments, ProtocolConnectionImpl conn)
     {
-        this.fragments = unmarkDoubleQuestion(fragments, protoConnection);
-        this.protoConnection = protoConnection;
+        this.fragments = unmarkDoubleQuestion(fragments, conn);
+        protoConnection = conn;
     }
     
-    SimpleQuery(String[] fragments, ProtocolConnectionImpl protoConnection, boolean isReWritable)
+    SimpleQuery(String[] fragments, ProtocolConnectionImpl conn, boolean isReWritable)
     {
-        this(fragments, protoConnection);
-        this.statementReWritableInsert = isReWritable;
+        this(fragments, conn);
+        statementReWritableInsert = isReWritable;
     }
 
     public ParameterList createParameterList() {
@@ -52,7 +52,8 @@ class SimpleQuery implements V3Query {
             else
                 sbuf.append(parameters.toString(i));
             sbuf.append(fragments[i]);
-        }
+        }    
+        
         return sbuf.toString();
     }
 
@@ -87,7 +88,7 @@ class SimpleQuery implements V3Query {
 		if (cachedMaxResultRowSize != null) {
 			return cachedMaxResultRowSize.intValue();
 		}
-		if (!this.statementDescribed) {
+		if (!statementDescribed) {
 			throw new IllegalStateException(
 					"Cannot estimate result row size on a statement that is not described");
 		}
@@ -137,12 +138,12 @@ class SimpleQuery implements V3Query {
     }
 
     void setStatementName(String statementName) {
-        this.statementName = statementName;
-        this.encodedStatementName = Utils.encodeUTF8(statementName);
+        statementName = statementName;
+        encodedStatementName = Utils.encodeUTF8(statementName);
     }
 
     void setStatementTypes(int[] paramTypes) {
-        this.preparedTypes = paramTypes;
+        preparedTypes = paramTypes;
     }
 
     int[] getStatementTypes() {
@@ -187,8 +188,8 @@ class SimpleQuery implements V3Query {
      * @param fields The fields that this query will return.
      */
     void setFields(Field[] fields) {
-        this.fields = fields;
-        this.cachedMaxResultRowSize = null;
+        fields = fields;
+        cachedMaxResultRowSize = null;
     }
 
     /**
@@ -206,8 +207,8 @@ class SimpleQuery implements V3Query {
         return portalDescribed;
     }
     void setPortalDescribed(boolean portalDescribed) {
-        this.portalDescribed = portalDescribed;
-        this.cachedMaxResultRowSize = null;
+        portalDescribed = portalDescribed;
+        cachedMaxResultRowSize = null;
     }
 
     // Have we sent a Describe Statement message for this query yet?
@@ -216,8 +217,8 @@ class SimpleQuery implements V3Query {
         return statementDescribed;
     }
     void setStatementDescribed(boolean statementDescribed) {
-        this.statementDescribed = statementDescribed;
-        this.cachedMaxResultRowSize = null;
+        statementDescribed = statementDescribed;
+        cachedMaxResultRowSize = null;
     }
 
     public boolean isEmpty()
@@ -226,11 +227,11 @@ class SimpleQuery implements V3Query {
     }
 
     void setCleanupRef(PhantomReference cleanupRef) {
-        if (this.cleanupRef != null) {
-            this.cleanupRef.clear();
-            this.cleanupRef.enqueue();
+        if (cleanupRef != null) {
+            cleanupRef.clear();
+            cleanupRef.enqueue();
         }
-        this.cleanupRef = cleanupRef;
+        cleanupRef = cleanupRef;
     }
 
     void unprepare() {
@@ -251,44 +252,37 @@ class SimpleQuery implements V3Query {
     
     @Override
     public boolean isStatementReWritableInsert() {
-        return this.statementReWritableInsert;
+        return statementReWritableInsert;
     }
     public void setStatementReWritableInsert(boolean isReWriteable) {
-        this.statementReWritableInsert = isReWriteable;
+        statementReWritableInsert = isReWriteable;
     }
     
     @Override
     public void addQueryFragments(String[] additional) {
-        additional = unmarkDoubleQuestion(additional, this.protoConnection);
-        String[] replacement = new String[this.fragments.length + additional.length];
-        int pos = 0;
-        for (int i = 0; i < this.fragments.length ; i += 1) {
-            replacement[i] = this.fragments[i];
-            pos += 1;
-        }
-        for (int i = 0; i < additional.length ; i += 1) {
-            replacement[pos] = additional[i];
-            pos += 1;
-        }
-        this.fragments = replacement;
+        additional = unmarkDoubleQuestion(additional, protoConnection);
+        String[] replacement = new String[fragments.length + additional.length];
+        System.arraycopy(fragments, 0, replacement, 0, fragments.length);
+        System.arraycopy(additional, 0, replacement, fragments.length, additional.length);
+        fragments = replacement;
     }
     
     @Override
     public int getBatchSize() {
-        return this.batchedCount;
+        return batchedCount;
     }
     @Override
     public void incrementBatchSize() {
-        this.batchedCount += 1;
+        batchedCount += 1;
     }
     
     @Override
     public void clearFragments() {
-        this.fragments = new String[0];
+        fragments = new String[0];
     }
     
     public void resetBatchedCount() {
-        this.batchedCount = 0;
+        batchedCount = 0;
     }
 
     private String[] fragments;

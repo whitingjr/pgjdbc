@@ -21,88 +21,81 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     public BatchedQueryDecorator(Query q) {
         super(new String[0], null); // protoConn is encapsulated. making a constructor call to SQ with object references difficult.
-        this.originalFragments = new String[q.getFragments().length] ;
-        System.arraycopy(q.getFragments(), 0, this.originalFragments, 0, q.getFragments().length);
-        this.batchedCount = q.getBatchSize();
+        originalFragments = new String[q.getFragments().length] ;
+        System.arraycopy(q.getFragments(), 0, originalFragments, 0, q.getFragments().length);
+        batchedCount = q.getBatchSize();
         if (q instanceof SimpleQuery) {
-            this.query = (SimpleQuery)q;
+            query = (SimpleQuery)q;
         }
     }
     
     public void reset() {
-        this.query.clearFragments();
-        this.query.addQueryFragments(this.originalFragments);
-        this.batchedCount = 0;
-        this.query.resetBatchedCount();
+        query.clearFragments();
+        query.addQueryFragments(originalFragments);
+        batchedCount = 0;
+        query.resetBatchedCount();
     }
     
     @Override
     public String[] getFragments() {
-        return this.query.getFragments();
+        return query.getFragments();
     }
     
     @Override
     public int getBatchSize() {
-        return this.batchedCount;
+        return batchedCount;
     }
     
     public void addQueryFragments( String[] additional ) {
-        String[] existing = this.query.getFragments();
+        String[] existing = query.getFragments();
         String[] replacement = new String[existing.length + additional.length];
-        int pos = 0;
-        for (int i = 0; i < existing.length ; i += 1) {
-            replacement[i] = existing[i];
-            pos += 1;
-        }
-        for (int i = 0; i < additional.length ; i += 1) {
-            replacement[pos] = additional[i];
-            pos += 1;
-        }
-        this.query.clearFragments();
-        this.query.addQueryFragments(replacement);
+        System.arraycopy(existing, 0, replacement, 0, existing.length);
+        System.arraycopy(additional, 0, replacement, existing.length, additional.length);
+        query.clearFragments();
+        query.addQueryFragments(replacement);
     }
     
     @Override
     public boolean isStatementDescribed() {
-        return this.query.isStatementDescribed();
+        return query.isStatementDescribed();
     }
     
     @Override
     public boolean isEmpty() {
-        return this.query.isEmpty();
+        return query.isEmpty();
     }
     
     @Override
     public ParameterList createParameterList() {
-        return this.query.createParameterList();
+        return query.createParameterList();
     }
     
     @Override
     public void incrementBatchSize() {
-        this.batchedCount += 1;
+        batchedCount += 1;
     }
     
     @Override
     public boolean isStatementReWritableInsert() {
-        return this.query.isStatementReWritableInsert();
+        return query.isStatementReWritableInsert();
     }
     
     @Override
     public void close() {
-        this.query.close();
+        query.close();
     }
     
     @Override
     public String toString(ParameterList parameters) {
-        return this.query.toString();
+        return query.toString();
     }
     @Override
     public void clearFragments() {
-        this.query.clearFragments();
+        query.clearFragments();
     }
     
     @Override
     public SimpleQuery[] getSubqueries() {
-        return this.query.getSubqueries();
+        return query.getSubqueries();
     }
 }

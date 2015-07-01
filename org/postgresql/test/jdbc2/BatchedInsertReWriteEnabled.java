@@ -8,6 +8,7 @@ import java.util.Properties;
 
 import junit.framework.TestCase;
 
+import org.postgresql.PGProperty;
 import org.postgresql.test.TestUtil;
 
 public class BatchedInsertReWriteEnabled extends TestCase{
@@ -45,20 +46,12 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
         } catch (SQLException sqle) {
             fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
-        } finally {
-//            if (null != pstmt) {pstmt.close();}
-//            con.rollback();
         }
         
         /* Now check the ps can be reused. The batched statement should be
-         * reset and have no knowledge of prior use.
+         * reset and have no knowledge of prior re-written batch.
          */
         try {
-            /*
-             * The connection is configured so the batch rewrite optimization
-             * is enabled. See setUp()
-             */
-//            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
             pstmt.addBatch();
@@ -102,7 +95,7 @@ public class BatchedInsertReWriteEnabled extends TestCase{
     protected void setUp() throws Exception
     {
         Properties props = new Properties();
-        props.setProperty("reWriteBatchedInserts", Boolean.TRUE.toString());
+        props.setProperty(PGProperty.REWRITE_BATCHED_INSERTS.getName(), Boolean.TRUE.toString());
         
         con = TestUtil.openDB(props);
         Statement stmt = con.createStatement();

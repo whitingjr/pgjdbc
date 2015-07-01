@@ -185,30 +185,32 @@ public class Parser {
     }
 
     /**
-     * Parse string to find the end of the INSERT keyword.
-     * @return int end position of the word insert in the query
+     * Parse string to check presence of INSERT keyword.
+     * @param query char[] of the query statement
+     * @param offset position of query to start checking
+     * @param isUpper is the text expected to be upper/lower case
+     * @return boolean indicates presence of word
      */
-    public static int parseInsertKeyword(final char[] query, int offset, boolean isUpper) {
-        int endPos = -1;
+    public static boolean parseInsertKeyword(final char[] query, int offset, boolean isUpper) {
         
         if (query.length < (offset+7))
-            return -1;
+            return false;
         
         if (isUpper && query[offset] == 'I' && query[offset+1] == 'N' && query[offset+2] == 'S' && query[offset+3] == 'E' && query[offset+4] == 'R' && query[offset+5] == 'T' ) { 
-            endPos = offset + 6;
+            return true;
         }
         else if ( !isUpper &&  query[offset] == 'i' &&  query[offset+1] == 'n' && query[offset+2] == 's' && query[offset+3] == 'e' && query[offset+4] == 'r' && query[offset+5] == 't') {
-            endPos = offset + 6;
+            return true;
         }
-        return endPos;
+        return false;
     }
     
     /**
-     * 
+     * Parse string to check presence of RETURNING keyword
      * @param query char[] of the query statement
      * @param offset position of query to start checking
-     * @param upper is the text expected to be upper/lower case
-     * @return
+     * @param isUpper is the text expected to be upper/lower case
+     * @return boolean indicates presence of word
      */
     public static boolean parseReturningKeyword(final char[] query, int offset, boolean isUpper) {
         if ( isUpper && query[offset] == 'R' && query[offset+1] == 'E' && query[offset+2] == 'T' && query[offset+3] == 'U' && query[offset+4] == 'R' && query[offset+5] == 'N' && query[offset+6] == 'I' && query[offset+7] == 'N' && query[offset+8] == 'G' ) { 

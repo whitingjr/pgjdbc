@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.StreamWrapper;
@@ -171,28 +172,30 @@ class FastpathParameterList implements ParameterList {
     }
 
     @Override
+    /**
+     * Replace all parameters with new values in provided list.
+     */
     public void addAll(ParameterList list) {
         if (list instanceof SimpleParameterList ) {
             // only v2.SimpleParameterList is compatible with this type
             SimpleParameterList spl = (SimpleParameterList) list;
-            int count = spl.getInParameterCount();
-            Object[] values = spl.getValues();
-            for (int i = 0 ; i < count ; i += 1) {
-                this.paramValues[i] = values[i]; 
-            }
+            Arrays.fill(paramValues, null);
+            System.arraycopy(spl.getValues(), 0, paramValues, 0, 
+                spl.getInParameterCount());
         }
     }
     
     @Override
+    /**
+     * Append parameters to the list.  
+     */
     public void appendAll(ParameterList list) {
         if (list instanceof SimpleParameterList ) {
-         // only v2.SimpleParameterList is compatible with this type
+            // only v2.SimpleParameterList is compatible with this type
             SimpleParameterList spl = (SimpleParameterList) list;
-            int count = (this.paramValues.length-1) + spl.getInParameterCount();
-            Object[] values = spl.getValues();
-            for (int i = (values.length -1) ; i < count ; i += 1) {
-                this.paramValues[i] = values[i]; 
-            }
+            int count = spl.getInParameterCount();
+            System.arraycopy(spl.getValues(), 0, paramValues, 
+                getInParameterCount()-count, count);
         }
     }
 

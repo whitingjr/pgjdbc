@@ -87,7 +87,7 @@ public interface Query {
     public int getBatchSize();
  
     /**
-     * 
+     * Clear fragments associated with the Query.
      */
     public void clearFragments();
     

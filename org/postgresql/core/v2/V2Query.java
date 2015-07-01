@@ -120,31 +120,28 @@ class V2Query implements Query {
     
     @Override
     public void addQueryFragments(String[] additional) {
-        String[] replacement = Arrays.copyOf(this.fragments, this.fragments.length + additional.length);
-        int pos = this.fragments.length;
-        for (int i = 0; i < replacement.length; i += 1) {
-            replacement[pos++] = additional[i];
-        }
-        this.fragments = replacement;
+        String[] replacement = Arrays.copyOf(fragments, fragments.length + additional.length);
+        System.arraycopy(additional, 0, replacement, fragments.length, additional.length);
+        fragments = replacement;
     }
 
     @Override
     public boolean isStatementReWritableInsert() {
-        return this.statementReWritableInsert;
+        return statementReWritableInsert;
     }
     
     public void setStatementReWritableInsert(boolean canReWrite) {
-        this.statementReWritableInsert = canReWrite;
+        statementReWritableInsert = canReWrite;
     }
     
     @Override
     public void incrementBatchSize() {
-        this.batchSize += 1;
+        batchSize += 1;
     }
     
     @Override
     public int getBatchSize() {
-        return this.batchSize;
+        return batchSize;
     }
     
     @Override
