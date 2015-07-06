@@ -192,7 +192,6 @@ public class Parser {
      * @return boolean indicates presence of word
      */
     public static boolean parseInsertKeyword(final char[] query, int offset, boolean isUpper) {
-        
         if (query.length < (offset+7))
             return false;
         

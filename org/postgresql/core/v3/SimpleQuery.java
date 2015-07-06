@@ -22,15 +22,15 @@ import java.lang.ref.PhantomReference;
  */
 class SimpleQuery implements V3Query {
 
-    SimpleQuery(String[] fragments, ProtocolConnectionImpl conn)
+    SimpleQuery(String[] fragments, ProtocolConnectionImpl protoConnection)
     {
-        this.fragments = unmarkDoubleQuestion(fragments, conn);
-        protoConnection = conn;
+        this.fragments = unmarkDoubleQuestion(fragments, protoConnection);
+        this.protoConnection = protoConnection;
     }
     
-    SimpleQuery(String[] fragments, ProtocolConnectionImpl conn, boolean isReWritable)
+    SimpleQuery(String[] fragments, ProtocolConnectionImpl protoConnection, boolean isReWritable)
     {
-        this(fragments, conn);
+        this(fragments, protoConnection);
         statementReWritableInsert = isReWritable;
     }
 
@@ -88,7 +88,7 @@ class SimpleQuery implements V3Query {
 		if (cachedMaxResultRowSize != null) {
 			return cachedMaxResultRowSize.intValue();
 		}
-		if (!statementDescribed) {
+		if (!this.statementDescribed) {
 			throw new IllegalStateException(
 					"Cannot estimate result row size on a statement that is not described");
 		}
@@ -138,12 +138,12 @@ class SimpleQuery implements V3Query {
     }
 
     void setStatementName(String statementName) {
-        statementName = statementName;
-        encodedStatementName = Utils.encodeUTF8(statementName);
+        this.statementName = statementName;
+        this.encodedStatementName = Utils.encodeUTF8(statementName);
     }
 
     void setStatementTypes(int[] paramTypes) {
-        preparedTypes = paramTypes;
+        this.preparedTypes = paramTypes;
     }
 
     int[] getStatementTypes() {
@@ -188,8 +188,8 @@ class SimpleQuery implements V3Query {
      * @param fields The fields that this query will return.
      */
     void setFields(Field[] fields) {
-        fields = fields;
-        cachedMaxResultRowSize = null;
+        this.fields = fields;
+        this.cachedMaxResultRowSize = null;
     }
 
     /**
@@ -207,8 +207,8 @@ class SimpleQuery implements V3Query {
         return portalDescribed;
     }
     void setPortalDescribed(boolean portalDescribed) {
-        portalDescribed = portalDescribed;
-        cachedMaxResultRowSize = null;
+        this.portalDescribed = portalDescribed;
+        this.cachedMaxResultRowSize = null;
     }
 
     // Have we sent a Describe Statement message for this query yet?
@@ -217,8 +217,8 @@ class SimpleQuery implements V3Query {
         return statementDescribed;
     }
     void setStatementDescribed(boolean statementDescribed) {
-        statementDescribed = statementDescribed;
-        cachedMaxResultRowSize = null;
+        this.statementDescribed = statementDescribed;
+        this.cachedMaxResultRowSize = null;
     }
 
     public boolean isEmpty()
@@ -227,11 +227,11 @@ class SimpleQuery implements V3Query {
     }
 
     void setCleanupRef(PhantomReference cleanupRef) {
-        if (cleanupRef != null) {
-            cleanupRef.clear();
-            cleanupRef.enqueue();
+        if (this.cleanupRef != null) {
+            this.cleanupRef.clear();
+            this.cleanupRef.enqueue();
         }
-        cleanupRef = cleanupRef;
+        this.cleanupRef = cleanupRef;
     }
 
     void unprepare() {

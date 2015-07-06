@@ -37,11 +37,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     @Override
-    public String[] getFragments() {
-        return query.getFragments();
-    }
-    
-    @Override
     public int getBatchSize() {
         return batchedCount;
     }
@@ -56,46 +51,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     @Override
-    public boolean isStatementDescribed() {
-        return query.isStatementDescribed();
-    }
-    
-    @Override
-    public boolean isEmpty() {
-        return query.isEmpty();
-    }
-    
-    @Override
-    public ParameterList createParameterList() {
-        return query.createParameterList();
-    }
-    
-    @Override
     public void incrementBatchSize() {
         batchedCount += 1;
-    }
-    
-    @Override
-    public boolean isStatementReWritableInsert() {
-        return query.isStatementReWritableInsert();
-    }
-    
-    @Override
-    public void close() {
-        query.close();
-    }
-    
-    @Override
-    public String toString(ParameterList parameters) {
-        return query.toString();
-    }
-    @Override
-    public void clearFragments() {
-        query.clearFragments();
-    }
-    
-    @Override
-    public SimpleQuery[] getSubqueries() {
-        return query.getSubqueries();
     }
 }
