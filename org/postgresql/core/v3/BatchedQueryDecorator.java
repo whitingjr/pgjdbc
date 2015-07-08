@@ -7,9 +7,9 @@ import org.postgresql.core.Query;
  * Purpose of this object is to support batched query re write 
  * behaviour. Responsibility for tracking the batch size and implement the clean up
  * of the query fragments after the batch execute is complete.
- * All other operations are passed back to the SimpleQuery implementation.
- * This object extends rather than composed because type QueryExecutorImpl.sendQuery 
- * relies on SimpleQuery.
+ * The methods re-direct calls instead to the composed SimpleQuery instance. Rather
+ * than the inherited methods.
+ * 
  * @author Jeremy Whiting
  *
  */
@@ -51,7 +51,51 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     @Override
+    public String[] getFragments() {
+        return this.query.getFragments();
+    }
+    
+    @Override
     public void incrementBatchSize() {
         batchedCount += 1;
     }
+    
+    @Override
+    public boolean isStatementDescribed() {
+        return this.query.isStatementDescribed();
+    }
+    
+    @Override
+    public ParameterList createParameterList() {
+            return this.query.createParameterList();
+    }
+    
+    @Override
+    public boolean isEmpty() {
+        return this.query.isEmpty();
+    }
+    @Override
+    public boolean isStatementReWritableInsert() {
+        return this.query.isStatementReWritableInsert();
+    }
+    
+    @Override
+    public void close() {
+        this.query.close();
+    }
+    
+    @Override
+    public String toString(ParameterList parameters) {
+        return this.query.toString();
+    }
+    @Override
+    public void clearFragments() {
+        this.query.clearFragments();
+    }
+    
+    @Override
+    public SimpleQuery[] getSubqueries() {
+        return this.query.getSubqueries();
+    }
+
 }
