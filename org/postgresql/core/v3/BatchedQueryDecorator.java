@@ -1,5 +1,8 @@
 package org.postgresql.core.v3;
 
+import java.lang.ref.PhantomReference;
+
+import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
 
@@ -20,13 +23,14 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private int batchedCount = 0;
     
     public BatchedQueryDecorator(Query q) {
-        super(new String[0], null); // protoConn is encapsulated. making a constructor call to SQ with object references difficult.
-        originalFragments = new String[q.getFragments().length] ;
-        System.arraycopy(q.getFragments(), 0, originalFragments, 0, q.getFragments().length);
-        batchedCount = q.getBatchSize();
+        super(null, null); // protoConn is encapsulated. making a constructor call to SQ with object references difficult.
         if (q instanceof SimpleQuery) {
             query = (SimpleQuery)q;
         }
+        originalFragments = new String[q.getFragments().length] ;
+        System.arraycopy(q.getFragments(), 0, originalFragments, 0, q.getFragments().length);
+        batchedCount = q.getBatchSize();
+        
     }
     
     public void reset() {
@@ -98,4 +102,68 @@ public class BatchedQueryDecorator extends SimpleQuery {
         return this.query.getSubqueries();
     }
 
+    @Override
+    public int getMaxResultRowSize() {
+        return query.getMaxResultRowSize();
+    }
+    
+    @Override
+    String getStatementName() {
+        return query.getStatementName();
+    }
+    
+    @Override
+    void setStatementTypes(int[] paramTypes) {
+        query.setStatementTypes(paramTypes);
+    }
+    
+    @Override
+    boolean isPreparedFor(int[] paramTypes) {
+        return query.isPreparedFor(paramTypes);
+    }
+    
+    @Override
+    boolean hasUnresolvedTypes() {
+        return query.hasUnresolvedTypes();
+    }
+    
+    @Override
+    byte[] getEncodedStatementName() {
+        return query.getEncodedStatementName();
+    }
+    
+    @Override
+    void setFields(Field[] fields) {
+        query.setFields(fields);
+    }
+    
+    @Override
+    boolean isPortalDescribed() {
+        return query.isPortalDescribed();
+    }
+    
+    @Override
+    void setPortalDescribed(boolean portalDescribed) {
+        query.setPortalDescribed(portalDescribed);
+    }
+    
+    @Override
+    void setStatementDescribed(boolean statementDescribed) {
+        query.setStatementDescribed(statementDescribed);
+    }
+    
+    @Override
+    void setCleanupRef(PhantomReference cleanupRef) {
+        query.setCleanupRef(cleanupRef);
+    }
+    
+    @Override
+    public void setStatementReWritableInsert(boolean isReWriteable) {
+        query.setStatementReWritableInsert(isReWriteable);
+    }
+    
+    @Override
+    void setStatementName(String statementName) {
+        query.setStatementName(statementName);
+    }
 }
