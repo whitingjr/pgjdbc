@@ -81,7 +81,7 @@ public class Jdbc2TestSuite extends TestSuite
         suite.addTestSuite(DatabaseEncodingTest.class);
 
         // Fastpath/LargeObject
-//        suite.addTestSuite(BlobTest.class);
+        suite.addTestSuite(BlobTest.class);
         suite.addTestSuite(OID74Test.class);
         suite.addTestSuite(BlobTransactionTest.class);
 
