@@ -73,22 +73,22 @@ public interface Query {
      * Get access to the fragments that make up this query.
      * @return
      */
-    public String[] getFragments();
+    String[] getFragments();
     
     /**
      * Increment the number of batched rows for this Query.
      */
-    public void incrementBatchSize();
+    void incrementBatchSize();
     
     /**
      * Get the number of times this Query has been batched. 
      * @return number of times <code>addBatch()</code> has been called.
      */
-    public int getBatchSize();
+    int getBatchSize();
  
     /**
      * Clear fragments associated with the Query.
      */
-    public void clearFragments();
+    void clearFragments();
     
 }
