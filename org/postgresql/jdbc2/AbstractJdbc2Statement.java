@@ -15,6 +15,7 @@ import java.math.*;
 import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -3589,9 +3590,25 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         replacement.addAll(old);
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
+        // resize and populate .fields and .preparedTypes arrays
+        Field[] oldFields = decoratedQuery.getFields();
+        int singleBatchparamCount = oldFields.length/decoratedQuery.getBatchSize();
+        int replacementSize = oldFields.length + singleBatchparamCount;
+        Field[] replacementFields = Arrays.copyOf(oldFields, replacementSize);
+        System.arraycopy(oldFields, 0, replacementFields, oldFields.length, singleBatchparamCount);
+        oldFields = null;
+        int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
+        int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, replacementSize);
+        System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
+        
         decoratedQuery.incrementBatchSize();
         
         return decoratedQuery;
+    }
+    
+    int asArrayPos(int pos)
+    {
+        return pos -= 1;
     }
     
     /**
@@ -3613,8 +3630,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
      * An object to compare two queries to detect if they are the same.
      * Uses the initial fragment in a Query. Assumes the inital fragment
      * is everything up to the initial query parameter.
-     * @author Jeremy Whiting
-     *
      */
     public class StatementComparator implements Comparator {
         /**

@@ -118,7 +118,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     @Override
+    public int[] getStatementTypes() {
+        return query.getStatementTypes();
+    }
+    
+    @Override
     boolean isPreparedFor(int[] paramTypes) {
+        //TODO: fix problem with ArrayIndexOutOfBoundsException when handling paramTypes
         return query.isPreparedFor(paramTypes);
     }
     
@@ -135,6 +141,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     void setFields(Field[] fields) {
         query.setFields(fields);
+    }
+    
+    @Override
+    public Field[] getFields() {
+        return query.getFields();
     }
     
     @Override
