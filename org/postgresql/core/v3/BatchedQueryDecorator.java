@@ -20,6 +20,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
 
     private SimpleQuery query = null;
     private final String[] originalFragments ;
+    private final int[] originalPreparedTypes;
+    private final Field[] originalFields;
     private int batchedCount = 0;
     
     public BatchedQueryDecorator(Query q) {
@@ -27,16 +29,38 @@ public class BatchedQueryDecorator extends SimpleQuery {
         if (q instanceof SimpleQuery) {
             query = (SimpleQuery)q;
         }
-        originalFragments = new String[q.getFragments().length] ;
-        System.arraycopy(q.getFragments(), 0, originalFragments, 0, q.getFragments().length);
+        if (null != query) {
+            int preparedParamCount = query.getFragments().length - 1;
+            if (null != query.getFragments()) {
+                originalFragments = new String[preparedParamCount] ;
+                System.arraycopy(query.getFragments(), 0, originalFragments, 0, preparedParamCount);
+            } else {
+                originalFragments = new String[preparedParamCount];
+            }
+            //TODO: copy the type information to the query
+            if (null != query.getStatementTypes() && query.getStatementTypes() > 0) {
+                originalPreparedTypes = new int[query.getFragments().length];
+                System.arraycopy(query.getStatementTypes(), 0, originalPreparedTypes, 0, query.getStatementTypes().length);
+            } else {
+                originalPreparedTypes = new int[0];
+            }
+            if (null != query.getFields()) {
+                originalFields = new Field[query.getFields().length];
+                System.arraycopy(query.getFields(), 0, originalFields, 0, query.getFields().length);
+            } else {
+                originalFields = new Field[0];
+            }
+        } else { // unsupported type of Query 
+            originalFragments = new String[0];
+            originalPreparedTypes = new int[0];
+            originalFields = new Field[0];
+        }
         batchedCount = q.getBatchSize();
-        
     }
     
     public void reset() {
-        query.clearFragments();
-        query.addQueryFragments(originalFragments);
         batchedCount = 0;
+        query.reset(originalFragments, originalPreparedTypes, originalFields);
         query.resetBatchedCount();
     }
     
@@ -113,8 +137,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     @Override
-    void setStatementTypes(int[] paramTypes) {
+    public void setStatementTypes(int[] paramTypes) {
         query.setStatementTypes(paramTypes);
+        if (isOriginalStale(paramTypes)) {
+            System.arraycopy(paramTypes, 0, originalPreparedTypes, 0, query.getFragments().length -1);
+        }
     }
     
     @Override
@@ -124,7 +151,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     boolean isPreparedFor(int[] paramTypes) {
-        //TODO: fix problem with ArrayIndexOutOfBoundsException when handling paramTypes
         return query.isPreparedFor(paramTypes);
     }
     
@@ -139,8 +165,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     @Override
-    void setFields(Field[] fields) {
+    public void setFields(Field[] fields) {
         query.setFields(fields);
+        // changed during Describe or reWrite.
+        if (isOriginalStale(fields)) {
+            System.arraycopy(fields, 0, originalFields, 0, originalFragments.length-1 );
+        }
     }
     
     @Override
@@ -176,5 +206,21 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     void setStatementName(String statementName) {
         query.setStatementName(statementName);
+    }
+    
+    boolean isDescribed(int[] preparedTypes) {
+        return originalPreparedTypes.length < preparedTypes.length;
+    }
+    
+    boolean isDescribed(Field[] preparedFields) {
+        return originalFields.length < preparedFields.length;
+    }
+    
+    boolean isOriginalStale(Field[] fields) {
+        return fields != null && fields.length > 0 && originalFields.length==0;
+    }
+    
+    boolean isOriginalStale(int[] preparedTypes) {
+        return preparedTypes != null && preparedTypes.length > 0 && originalPreparedTypes.length==0;
     }
 }

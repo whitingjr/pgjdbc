@@ -284,6 +284,16 @@ class SimpleQuery implements V3Query {
     public void resetBatchedCount() {
         batchedCount = 0;
     }
+    
+    void reset(String[] originalFragments, int[] originalTypes, Field[] originalFields)
+    {
+        fragments = new String[originalFragments.length];
+        System.arraycopy(originalFragments, 0, fragments, 0, originalFragments.length);
+        preparedTypes = new int[originalTypes.length];
+        System.arraycopy(originalTypes, 0, preparedTypes, 0, originalTypes.length);
+        fields = new Field[originalFields.length];
+        System.arraycopy(originalFields, 0, fields, 0, originalFields.length);
+    }
 
     private String[] fragments;
     private final ProtocolConnectionImpl protoConnection;

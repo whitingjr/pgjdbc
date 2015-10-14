@@ -3064,6 +3064,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
                 batchParameters.add(preparedParameters.copy());
             }
         }
+        
     }
 
     public ResultSetMetaData getMetaData() throws SQLException
@@ -3562,15 +3563,15 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     
     /**
      * Use this method to rewrite the prior Query sql with additional 
-     * paramaterized fields. Add parameters of the current list to prior. 
-     * @param priorQuery
-     * @param currentQuery
-     * @param priorParameters
-     * @param currentParameters
+     * paramaterized fields. Add parameters of the current list to prior.
+     * @param batchStatements all the statements 
+     * @param batchParameters all the parameters
+     * @param preparedParameters all the prepared parameters
      */
     private Query reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
         int tail = batchStatements.size()-1;
         Query prior = (Query)batchStatements.get(tail);
+        prior.
         BatchedQueryDecorator decoratedQuery = null;
         if (prior instanceof BatchedQueryDecorator) {
             decoratedQuery = (BatchedQueryDecorator)prior;
@@ -3591,15 +3592,24 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
         // resize and populate .fields and .preparedTypes arrays
+        int singleBatchparamCount = preparedParameters.getParameterCount()/decoratedQuery.getBatchSize();
         Field[] oldFields = decoratedQuery.getFields();
-        int singleBatchparamCount = oldFields.length/decoratedQuery.getBatchSize();
-        int replacementSize = oldFields.length + singleBatchparamCount;
-        Field[] replacementFields = Arrays.copyOf(oldFields, replacementSize);
-        System.arraycopy(oldFields, 0, replacementFields, oldFields.length, singleBatchparamCount);
-        oldFields = null;
+        if (null != oldFields && oldFields.length > 0) {
+            int fieldsReplacementSize = oldFields.length + singleBatchparamCount;
+            Field[] replacementFields = Arrays.copyOf(oldFields, fieldsReplacementSize);
+            System.arraycopy(oldFields, 0, replacementFields, oldFields.length, singleBatchparamCount);
+            decoratedQuery.setFields(replacementFields);
+        }
+        
+        // keep type information in sync with the query
         int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
-        int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, replacementSize);
-        System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
+        if (null != oldPreparedTypes && oldPreparedTypes.length > 0) {
+            int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, oldPreparedTypes.length + singleBatchparamCount);
+            System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
+            decoratedQuery.setStatementTypes(replacementPreparedTypes);
+        } else { // initial batch
+            decoratedQuery.setStatementTypes(preparedParameters.getTypeOIDs());
+        }
         
         decoratedQuery.incrementBatchSize();
         
