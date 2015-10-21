@@ -1,6 +1,7 @@
 package org.postgresql.core.v3;
 
 import java.lang.ref.PhantomReference;
+import java.util.Arrays;
 
 import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
@@ -23,32 +24,38 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private final int[] originalPreparedTypes;
     private final Field[] originalFields;
     private int batchedCount = 0;
+    public static final int PREPARED_TYPES_UNSET = -1;
     
+    /**
+     * Set up the decorator with data structures that are sized correctly for a batch with a 
+     * single row. Sizing for meta data needs to be the same. Meta data may not be available
+     * yet. Available after a Describe message is processed.
+     * @param q
+     */
     public BatchedQueryDecorator(Query q) {
         super(null, null); // protoConn is encapsulated. making a constructor call to SQ with object references difficult.
         if (q instanceof SimpleQuery) {
             query = (SimpleQuery)q;
         }
-        if (null != query) {
-            int preparedParamCount = query.getFragments().length - 1;
-            if (null != query.getFragments()) {
-                originalFragments = new String[preparedParamCount] ;
-                System.arraycopy(query.getFragments(), 0, originalFragments, 0, preparedParamCount);
-            } else {
-                originalFragments = new String[preparedParamCount];
+        if (query != null) {
+            int paramCount = query.getFragments().length - 1;
+            
+            originalFragments = new String[paramCount];
+            if (query.getFragments() != null && query.getFragments().length > 0) {
+                System.arraycopy(query.getFragments(), 0, originalFragments, 0, paramCount);
             }
-            //TODO: copy the type information to the query
-            if (null != query.getStatementTypes() && query.getStatementTypes() > 0) {
-                originalPreparedTypes = new int[query.getFragments().length];
-                System.arraycopy(query.getStatementTypes(), 0, originalPreparedTypes, 0, query.getStatementTypes().length);
-            } else {
-                originalPreparedTypes = new int[0];
+            
+            originalPreparedTypes = new int[paramCount];
+            if (query.getStatementTypes() != null && query.getStatementTypes().length > 0) {
+                System.arraycopy(query.getStatementTypes(), 0, originalPreparedTypes, 0, paramCount);
             }
-            if (null != query.getFields()) {
-                originalFields = new Field[query.getFields().length];
-                System.arraycopy(query.getFields(), 0, originalFields, 0, query.getFields().length);
-            } else {
-                originalFields = new Field[0];
+            else {
+                Arrays.fill(originalPreparedTypes, -1); // use -1 to indicate an unset primitive
+            }
+
+            originalFields = new Field[paramCount];
+            if (query.getFields() != null && query.getFields().length > 0) {
+                System.arraycopy(query.getFields(), 0, originalFields, 0, paramCount);
             }
         } else { // unsupported type of Query 
             originalFragments = new String[0];
@@ -136,11 +143,16 @@ public class BatchedQueryDecorator extends SimpleQuery {
         return query.getStatementName();
     }
     
+    /**
+     * Detect if a Describe has been processed. The original meta data may need
+     * updating.
+     */
     @Override
     public void setStatementTypes(int[] paramTypes) {
         query.setStatementTypes(paramTypes);
         if (isOriginalStale(paramTypes)) {
-            System.arraycopy(paramTypes, 0, originalPreparedTypes, 0, query.getFragments().length -1);
+            System.arraycopy(paramTypes, 0, originalPreparedTypes, 0, 
+                    query.getFragments().length -1);
         }
     }
     
@@ -164,12 +176,17 @@ public class BatchedQueryDecorator extends SimpleQuery {
         return query.getEncodedStatementName();
     }
     
+    /**
+     * Detect if a Describe has been processed. The original meta data may need
+     * updating.
+     */
     @Override
     public void setFields(Field[] fields) {
         query.setFields(fields);
         // changed during Describe or reWrite.
         if (isOriginalStale(fields)) {
-            System.arraycopy(fields, 0, originalFields, 0, originalFragments.length-1 );
+            System.arraycopy(fields, 0, originalFields, 0,
+                    originalFragments.length-1 );
         }
     }
     
@@ -216,11 +233,26 @@ public class BatchedQueryDecorator extends SimpleQuery {
         return originalFields.length < preparedFields.length;
     }
     
+    /**
+     * Detect when the vanilla Field meta data is out of date. It
+     * indicates since construction a describe message has been processed. This
+     * object needs updating.
+     * @param fields
+     * @return
+     */
     boolean isOriginalStale(Field[] fields) {
         return fields != null && fields.length > 0 && originalFields.length==0;
     }
     
+    /**
+     * Detect when the vanilla prepared type meta data is out of date. It
+     * indicates since construction a describe message has been processed. This
+     * object needs updating.
+     * @param preparedTypes meta data to compare with
+     * @return true if the constructed meta data is out of date
+     */
     boolean isOriginalStale(int[] preparedTypes) {
-        return preparedTypes != null && preparedTypes.length > 0 && originalPreparedTypes.length==0;
+        return preparedTypes != null && preparedTypes.length > 0 && 
+                originalPreparedTypes.length==0;
     }
 }

@@ -3571,7 +3571,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     private Query reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
         int tail = batchStatements.size()-1;
         Query prior = (Query)batchStatements.get(tail);
-        prior.
+        //TODO: check to make sure original meta data needs updating.
         BatchedQueryDecorator decoratedQuery = null;
         if (prior instanceof BatchedQueryDecorator) {
             decoratedQuery = (BatchedQueryDecorator)prior;
@@ -3591,19 +3591,19 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         replacement.addAll(old);
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
-        // resize and populate .fields and .preparedTypes arrays
+        
+        // resize and populate .fields and .preparedTypes meta data
         int singleBatchparamCount = preparedParameters.getParameterCount()/decoratedQuery.getBatchSize();
         Field[] oldFields = decoratedQuery.getFields();
-        if (null != oldFields && oldFields.length > 0) {
+        if (null != oldFields && oldFields[0] != null) {
             int fieldsReplacementSize = oldFields.length + singleBatchparamCount;
             Field[] replacementFields = Arrays.copyOf(oldFields, fieldsReplacementSize);
             System.arraycopy(oldFields, 0, replacementFields, oldFields.length, singleBatchparamCount);
             decoratedQuery.setFields(replacementFields);
         }
         
-        // keep type information in sync with the query
         int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
-        if (null != oldPreparedTypes && oldPreparedTypes.length > 0) {
+        if (null != oldPreparedTypes && oldPreparedTypes[0] != BatchedQueryDecorator.PREPARED_TYPES_UNSET) {
             int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, oldPreparedTypes.length + singleBatchparamCount);
             System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
             decoratedQuery.setStatementTypes(replacementPreparedTypes);
