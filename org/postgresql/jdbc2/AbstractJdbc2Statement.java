@@ -3608,6 +3608,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
             decoratedQuery.setStatementTypes(replacementPreparedTypes);
         } else { // initial batch
+            //TODO: do not set request type information
             decoratedQuery.setStatementTypes(preparedParameters.getTypeOIDs());
         }
         

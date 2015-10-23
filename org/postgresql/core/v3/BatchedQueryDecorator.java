@@ -40,9 +40,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
         if (query != null) {
             int paramCount = query.getFragments().length - 1;
             
-            originalFragments = new String[paramCount];
-            if (query.getFragments() != null && query.getFragments().length > 0) {
-                System.arraycopy(query.getFragments(), 0, originalFragments, 0, paramCount);
+            int fragmentsLength = query.getFragments().length;
+            originalFragments = new String[fragmentsLength];
+            if (query.getFragments() != null && fragmentsLength > 0) {
+                System.arraycopy(query.getFragments(), 0, originalFragments, 0, fragmentsLength);
             }
             
             originalPreparedTypes = new int[paramCount];
@@ -50,7 +51,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
                 System.arraycopy(query.getStatementTypes(), 0, originalPreparedTypes, 0, paramCount);
             }
             else {
-                Arrays.fill(originalPreparedTypes, -1); // use -1 to indicate an unset primitive
+                Arrays.fill(originalPreparedTypes, PREPARED_TYPES_UNSET); // use -1 to indicate an unset primitive
             }
 
             originalFields = new Field[paramCount];
@@ -158,7 +159,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     public int[] getStatementTypes() {
-        return query.getStatementTypes();
+        int types[] = query.getStatementTypes();
+        if (isOriginalStale(types)) {
+            System.arraycopy(types, 0, originalPreparedTypes, 0, 
+                    query.getFragments().length -1);
+        }
+        return types;
     }
     
     @Override
@@ -192,7 +198,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     public Field[] getFields() {
-        return query.getFields();
+        // changed during Describe or reWrite.
+        Field[] current = query.getFields();
+        if (isOriginalStale(current)) {
+            System.arraycopy(current, 0, originalFields, 0,
+                    originalFragments.length-1 );
+        }
+        return current;
     }
     
     @Override
@@ -241,7 +253,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
      * @return
      */
     boolean isOriginalStale(Field[] fields) {
-        return fields != null && fields.length > 0 && originalFields.length==0;
+        boolean isOriginalUnSet = true;
+        for (Field f: originalFields) {
+            isOriginalUnSet |= f==null;
+        }
+        
+        return fields != null && fields.length > 0 && 
+                isOriginalUnSet;
     }
     
     /**
@@ -252,7 +270,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
      * @return true if the constructed meta data is out of date
      */
     boolean isOriginalStale(int[] preparedTypes) {
+        boolean isOriginalUnSet = true;
+        for (int type: originalPreparedTypes) { 
+            isOriginalUnSet |= type == PREPARED_TYPES_UNSET;
+        }
         return preparedTypes != null && preparedTypes.length > 0 && 
-                originalPreparedTypes.length==0;
+                isOriginalUnSet;
     }
 }
