@@ -6,6 +6,7 @@ import java.util.Arrays;
 import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
+import static org.postgresql.core.Oid.UNSPECIFIED;
 
 /**
  * Purpose of this object is to support batched query re write 
@@ -24,12 +25,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private final int[] originalPreparedTypes;
     private final Field[] originalFields;
     private int batchedCount = 0;
-    public static final int PREPARED_TYPES_UNSET = -1;
     
     /**
      * Set up the decorator with data structures that are sized correctly for a batch with a 
      * single row. Sizing for meta data needs to be the same. Meta data may not be available
-     * yet. Available after a Describe message is processed.
+     * yet. Type information should be available after a ParameterDescription message is processed.
      * @param q
      */
     public BatchedQueryDecorator(Query q) {
@@ -51,7 +51,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
                 System.arraycopy(query.getStatementTypes(), 0, originalPreparedTypes, 0, paramCount);
             }
             else {
-                Arrays.fill(originalPreparedTypes, PREPARED_TYPES_UNSET); // use -1 to indicate an unset primitive
+                Arrays.fill(originalPreparedTypes, UNSPECIFIED); // use -1 to indicate an unset primitive
             }
 
             originalFields = new Field[paramCount];
@@ -103,7 +103,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     public ParameterList createParameterList() {
-            return this.query.createParameterList();
+        return this.query.createParameterList();
     }
     
     @Override
@@ -152,8 +152,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     public void setStatementTypes(int[] paramTypes) {
         query.setStatementTypes(paramTypes);
         if (isOriginalStale(paramTypes)) {
-            System.arraycopy(paramTypes, 0, originalPreparedTypes, 0, 
-                    query.getFragments().length -1);
+            updateOriginal(paramTypes);
         }
     }
     
@@ -161,8 +160,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     public int[] getStatementTypes() {
         int types[] = query.getStatementTypes();
         if (isOriginalStale(types)) {
-            System.arraycopy(types, 0, originalPreparedTypes, 0, 
-                    query.getFragments().length -1);
+            updateOriginal(types);
         }
         return types;
     }
@@ -191,8 +189,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         query.setFields(fields);
         // changed during Describe or reWrite.
         if (isOriginalStale(fields)) {
-            System.arraycopy(fields, 0, originalFields, 0,
-                    originalFragments.length-1 );
+            updateOriginal(fields);
         }
     }
     
@@ -201,8 +198,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         // changed during Describe or reWrite.
         Field[] current = query.getFields();
         if (isOriginalStale(current)) {
-            System.arraycopy(current, 0, originalFields, 0,
-                    originalFragments.length-1 );
+            updateOriginal(current);
         }
         return current;
     }
@@ -247,34 +243,77 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     /**
      * Detect when the vanilla Field meta data is out of date. It
-     * indicates since construction a describe message has been processed. This
-     * object needs updating.
+     * indicates since construction a ParameterDescription message has been 
+     * processed. This object needs updating.
      * @param fields
      * @return
      */
-    boolean isOriginalStale(Field[] fields) {
-        boolean isOriginalUnSet = true;
-        for (Field f: originalFields) {
-            isOriginalUnSet |= f==null;
+    private boolean isOriginalStale(Field[] fields) {
+        if (fields == null) {
+            return false;
         }
-        
-        return fields != null && fields.length > 0 && 
-                isOriginalUnSet;
+        if (fields.length == 0) {
+            return false;
+        }
+        int maxPos = originalFields.length - 1;
+        for (int pos = 0; pos <= maxPos; pos += 1) {
+            if (originalFields[pos]==null && fields[pos] != null) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**
      * Detect when the vanilla prepared type meta data is out of date. It
-     * indicates since construction a describe message has been processed. This
-     * object needs updating.
+     * indicates since construction a ParameterDescription message has been 
+     * processed. This object needs updating.
      * @param preparedTypes meta data to compare with
      * @return true if the constructed meta data is out of date
      */
-    boolean isOriginalStale(int[] preparedTypes) {
-        boolean isOriginalUnSet = true;
-        for (int type: originalPreparedTypes) { 
-            isOriginalUnSet |= type == PREPARED_TYPES_UNSET;
+    private boolean isOriginalStale(int[] preparedTypes) {
+        if (preparedTypes == null) {
+            return false;
         }
-        return preparedTypes != null && preparedTypes.length > 0 && 
-                isOriginalUnSet;
+        if (preparedTypes.length == 0) {
+            return false;
+        }
+        int maxPos = originalPreparedTypes.length - 1;
+        for (int pos = 0; pos <= maxPos ; pos += 1  ) { 
+            if ( originalPreparedTypes[pos]== UNSPECIFIED && preparedTypes[pos] != UNSPECIFIED) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private void updateOriginal(Field[] fields) {
+        if (fields==null) {
+            return;
+        }
+        if (fields.length==0) {
+            return;
+        }
+        int maxPos = originalFields.length -1;
+        for (int pos = 0; pos < maxPos; pos+=1) {
+            if (originalFields[pos]==null && fields[pos] != null) {
+                originalFields[pos] = fields[pos];
+            }
+        }            
+    }
+    
+    private void updateOriginal(int[] preparedTypes) {
+        if (preparedTypes==null) {
+            return;
+        }
+        if (preparedTypes.length==0) {
+            return;
+        }
+        int maxPos = originalPreparedTypes.length -1;
+        for (int pos = 0; pos < maxPos; pos++) {
+            if (originalPreparedTypes[pos]==UNSPECIFIED && preparedTypes[pos]!=UNSPECIFIED) {
+                originalPreparedTypes[pos]=preparedTypes[pos];
+            }
+        }
     }
 }

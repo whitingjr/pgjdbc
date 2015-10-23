@@ -35,6 +35,7 @@ import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.PGobject;
 import org.postgresql.util.GT;
+import static org.postgresql.core.Oid.UNSPECIFIED;
 
 /**
  * This class defines methods of the jdbc2 specification.
@@ -3583,7 +3584,8 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         // modify last fragment to begin next parameter placement
         String[] fragments = decoratedQuery.getFragments();
         fragments[fragments.length -1] = fragments[fragments.length -1] + ",(";
-        
+
+        //TODO: update the ParamterList and set type information for each parameter
         decoratedQuery.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
         // create a new paramlist that is sized correctly
         ParameterList replacement = decoratedQuery.createParameterList();
@@ -3592,6 +3594,8 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         replacement.appendAll(preparedParameters);
         batchParameters.add(replacement);
         
+
+        //TODO: set the preparedType information on the query
         // resize and populate .fields and .preparedTypes meta data
         int singleBatchparamCount = preparedParameters.getParameterCount()/decoratedQuery.getBatchSize();
         Field[] oldFields = decoratedQuery.getFields();
@@ -3603,13 +3607,10 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         }
         
         int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
-        if (null != oldPreparedTypes && oldPreparedTypes[0] != BatchedQueryDecorator.PREPARED_TYPES_UNSET) {
+        if (null != oldPreparedTypes && oldPreparedTypes[0] != UNSPECIFIED) {
             int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, oldPreparedTypes.length + singleBatchparamCount);
             System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
             decoratedQuery.setStatementTypes(replacementPreparedTypes);
-        } else { // initial batch
-            //TODO: do not set request type information
-            decoratedQuery.setStatementTypes(preparedParameters.getTypeOIDs());
         }
         
         decoratedQuery.incrementBatchSize();
