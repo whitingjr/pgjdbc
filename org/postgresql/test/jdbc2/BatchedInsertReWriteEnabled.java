@@ -80,6 +80,38 @@ public class BatchedInsertReWriteEnabled extends TestCase{
         }
     }
     
+    public void testBatchWithReWrittenBatchStatementWithSemiColon() throws SQLException {
+        PreparedStatement pstmt = null;
+        try {
+            /*
+             * The connection is configured so the batch rewrite optimization
+             * is enabled. See setUp()
+             */
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?);");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch(); //statement one
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();//statement two, this should be collapsed into prior statement
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();//statement three, this should be collapsed into prior statement
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(3, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    }
+    
     public BatchedInsertReWriteEnabled(String name)
     {
         super(name);

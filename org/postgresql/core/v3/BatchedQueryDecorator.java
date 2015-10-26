@@ -23,7 +23,9 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private SimpleQuery query = null;
     private final String[] originalFragments ;
     private final int[] originalPreparedTypes;
+    private boolean isPreparedTypesSet;
     private final Field[] originalFields;
+    private boolean isFieldsSet;
     private int batchedCount = 0;
     
     /**
@@ -68,7 +70,28 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     public void reset() {
         batchedCount = 0;
-        query.reset(originalFragments, originalPreparedTypes, originalFields);
+
+        int[] initializedTypes = null;
+        for (int pos = 0; pos < originalPreparedTypes.length; pos += 1) {
+            if (originalPreparedTypes[pos]==UNSPECIFIED) {
+                initializedTypes = new int[0];
+                break;
+            }
+        }
+        if (initializedTypes==null) {
+            initializedTypes = originalPreparedTypes;
+        }
+        Field[] initializedFields = null;
+        for (int pos = 0; pos<=originalFields.length; pos += 1) {
+            if (originalFields[pos]==null ) {
+                initializedFields = new Field[0];
+                break;
+            }
+        }
+        if (initializedFields==null) {
+            initializedFields = originalFields;
+        }
+        query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
     }
     
@@ -249,10 +272,16 @@ public class BatchedQueryDecorator extends SimpleQuery {
      * @return
      */
     private boolean isOriginalStale(Field[] fields) {
+        if (isFieldsSet) {
+            return false;
+        }
         if (fields == null) {
             return false;
         }
         if (fields.length == 0) {
+            return false;
+        }
+        if (fields.length < originalFields.length) {
             return false;
         }
         int maxPos = originalFields.length - 1;
@@ -272,10 +301,16 @@ public class BatchedQueryDecorator extends SimpleQuery {
      * @return true if the constructed meta data is out of date
      */
     private boolean isOriginalStale(int[] preparedTypes) {
+        if (isPreparedTypesSet) {
+            return false;
+        }
         if (preparedTypes == null) {
             return false;
         }
         if (preparedTypes.length == 0) {
+            return false;
+        }
+        if (preparedTypes.length < originalPreparedTypes.length) {
             return false;
         }
         int maxPos = originalPreparedTypes.length - 1;
@@ -295,9 +330,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
             return;
         }
         int maxPos = originalFields.length -1;
-        for (int pos = 0; pos < maxPos; pos+=1) {
+        for (int pos = 0; pos <= maxPos; pos+=1) {
             if (originalFields[pos]==null && fields[pos] != null) {
                 originalFields[pos] = fields[pos];
+            }
+            if (pos==maxPos) {
+                isFieldsSet=true;
             }
         }            
     }
@@ -310,9 +348,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
             return;
         }
         int maxPos = originalPreparedTypes.length -1;
-        for (int pos = 0; pos < maxPos; pos++) {
+        for (int pos = 0; pos <= maxPos; pos++) {
             if (originalPreparedTypes[pos]==UNSPECIFIED && preparedTypes[pos]!=UNSPECIFIED) {
                 originalPreparedTypes[pos]=preparedTypes[pos];
+            }
+            if (pos==maxPos) {
+                isPreparedTypesSet=true;
             }
         }
     }
