@@ -8,6 +8,7 @@ import java.util.Set;
 import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
+import org.postgresql.core.Utils;
 
 import static org.postgresql.core.Oid.UNSPECIFIED;
 
@@ -31,6 +32,9 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private boolean isFieldsSet;
     private int batchedCount = 0;
     private Set<Integer> isDescribed = new HashSet<Integer>(51);
+    private static final String NAME_FORMAT = "%1$s_P%2$d";
+    private String statementName=null;
+    private byte[] encodedName = null;
     
     /**
      * Set up the decorator with data structures that are sized correctly for a batch with a 
@@ -97,6 +101,9 @@ public class BatchedQueryDecorator extends SimpleQuery {
         }
         query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
+        this.statementName = null;
+        this.encodedName = null;
+        
     }
     
     @Override
@@ -111,6 +118,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
         System.arraycopy(additional, 0, replacement, existing.length, additional.length);
         query.clearFragments();
         query.addQueryFragments(replacement);
+        this.statementName=null;
+        this.encodedName=null;
     }
     
     @Override
@@ -171,7 +180,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     String getStatementName() {
-        return query.getStatementName();
+        if (this.statementName==null) {
+            this.statementName=String.format(NAME_FORMAT, query.getStatementName(), getFragments().length-1);
+        }
+        return this.statementName;
     }
     
     /**
@@ -207,7 +219,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     byte[] getEncodedStatementName() {
-        return query.getEncodedStatementName();
+        if (this.encodedName==null) {
+            this.encodedName = Utils.encodeUTF8(getStatementName());
+        }
+        return this.encodedName;
     }
     
     /**
@@ -271,7 +286,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
      */
     @Override
     void setStatementName(String statementName) {
-        query.setStatementName( String.format("%1$s_P%2$d", statementName, getFragments().length-1) );
+        query.setStatementName(statementName);
     }
     
     boolean isDescribed(int[] preparedTypes) {
