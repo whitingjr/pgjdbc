@@ -2,10 +2,13 @@ package org.postgresql.core.v3;
 
 import java.lang.ref.PhantomReference;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
+
 import static org.postgresql.core.Oid.UNSPECIFIED;
 
 /**
@@ -27,6 +30,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private final Field[] originalFields;
     private boolean isFieldsSet;
     private int batchedCount = 0;
+    private Set<Integer> isDescribed = new HashSet<Integer>(51);
     
     /**
      * Set up the decorator with data structures that are sized correctly for a batch with a 
@@ -119,9 +123,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
         batchedCount += 1;
     }
     
+    /**
+     * Check if this unique batched query has been described.
+     */
     @Override
     public boolean isStatementDescribed() {
-        return this.query.isStatementDescribed();
+        return isDescribed.contains(getFragments().length-1);
     }
     
     @Override
@@ -238,7 +245,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     void setStatementDescribed(boolean statementDescribed) {
-        query.setStatementDescribed(statementDescribed);
+        if (statementDescribed) {
+            isDescribed.add(getFragments().length-1);
+        } else {
+            isDescribed.remove(getFragments().length-1);
+        }
+            
     }
     
     @Override
@@ -251,9 +263,15 @@ public class BatchedQueryDecorator extends SimpleQuery {
         query.setStatementReWritableInsert(isReWriteable);
     }
     
+    /**
+     * Batched queries may have varying parameter counts. To ensure 
+     * statement uniqueness append the parameter count. Otherwise
+     * the backend will reject a statement with a given name and 
+     * a mismatched parameter count. See PREPARE.
+     */
     @Override
     void setStatementName(String statementName) {
-        query.setStatementName(statementName);
+        query.setStatementName( String.format("%1$s_P%2$d", statementName, getFragments().length-1) );
     }
     
     boolean isDescribed(int[] preparedTypes) {
