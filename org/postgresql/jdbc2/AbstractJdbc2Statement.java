@@ -3049,7 +3049,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             // we need to create copies of our parameters, otherwise the values can be changed
             batchParameters.add(preparedParameters.copy());
             preparedQuery.incrementBatchSize();
-            return;
         } else {
             if (this.connection.isReWriteBatchedInsertsEnabled() && preparedQuery.isStatementReWritableInsert()) {
                 if (this.comparator == null) {

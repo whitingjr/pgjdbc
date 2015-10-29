@@ -34,7 +34,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private boolean isFieldsSet;
     private int batchedCount = 0;
     private Map<Integer,Object> isDescribed = new HashMap<Integer,Object>(51);
-    private static final String NAME_FORMAT = "%1$s_P%2$d";
+    private static final String NAME_FORMAT = "%1$s_P_%2$d";
     /** statementName is isolated from the query field to allow the prepared 
      * statement uniqueness to be tracked/detected. same for the encodedName field.
      */
@@ -82,9 +82,9 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     public void reset() {
-        isDescribed.put(getFragments().length-1, null);
         batchedCount = 0;
-
+        isDescribed.put(getFragments().length-1, null);
+        
         int[] initializedTypes = null;
         for (int pos = 0; pos < originalPreparedTypes.length; pos += 1) {
             if (originalPreparedTypes[pos]==UNSPECIFIED) {
@@ -270,7 +270,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
         } else {
             isDescribed.remove(getFragments().length-1);
         }
-            
     }
     
     @Override
