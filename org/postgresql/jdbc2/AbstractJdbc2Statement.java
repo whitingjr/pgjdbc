@@ -2967,7 +2967,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
                 updateCounts[i] = Statement.SUCCESS_NO_INFO;
             }
             if (queries[0] instanceof BatchedQueryDecorator) {
-                ((BatchedQueryDecorator) queries[0]).reset(); // only BQD when batchSize > 1
+                ((BatchedQueryDecorator) queries[0]).reset(); // only BQD when batchSize == 1
             }
         }
 

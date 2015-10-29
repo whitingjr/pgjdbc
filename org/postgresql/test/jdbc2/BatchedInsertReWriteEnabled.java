@@ -22,12 +22,14 @@ public class BatchedInsertReWriteEnabled extends TestCase{
      */
     public void testBatchWithReWrittenRepeatedInsertStatementOptimizationEnabled() throws SQLException {
         PreparedStatement pstmt = null;
+        Connection connection = null;
         try {
             /*
              * The connection is configured so the batch rewrite optimization
              * is enabled. See setUp()
              */
-            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+            connection = getConnectionWithLowPreparedThreshold();
+            pstmt = connection.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
             pstmt.addBatch(); //statement one
@@ -46,11 +48,42 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
         } catch (SQLException sqle) {
             fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
+        } catch (Exception e) {
+            fail ("Exception thrown:"+ e.getMessage());
         }
         
         /* Now check the ps can be reused. The batched statement should be
          * reset and have no knowledge of prior re-written batch.
+         * This test uses a different batch size. To test if the 
+         * driver detects the different size and prepares the statement on 
+         * with the backend. If not then an exception will be thrown for
+         * an unknown prepared statement.
          */
+        try {
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();
+            pstmt.setInt(1, 7);
+            pstmt.setInt(2, 8);
+            pstmt.addBatch();
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(4, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
+        }
+        
         try {
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
@@ -76,7 +109,8 @@ public class BatchedInsertReWriteEnabled extends TestCase{
             fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
         } finally {
             if (null != pstmt) {pstmt.close();}
-            con.rollback();
+            connection.rollback();
+            close(connection);
         }
     }
     
@@ -109,6 +143,77 @@ public class BatchedInsertReWriteEnabled extends TestCase{
         } finally {
             if (null != pstmt) {pstmt.close();}
             con.rollback();
+        }
+    }
+    
+    /**
+     * Test to check a PreparedStatement has been prepared on the backend. 
+     */
+    public void testStatementPreparedStatusOnBackend() 
+        throws SQLException{
+        PreparedStatement pstmt = null;
+        Connection lowPreparedCon = null; 
+        try {
+            lowPreparedCon = getConnectionWithLowPreparedThreshold();
+            pstmt = lowPreparedCon.prepareStatement("INSERT INTO testbatch VALUES (?,?);");
+            /* 
+             * Use a batch count that is unique in this testsuite. To ensure 
+             * the statement has not been prepared before.
+             */
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch(); //statement one
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();//statement two, this should be collapsed into prior statement
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();//statement three, this should be collapsed into prior statement
+            pstmt.setInt(1, 7);
+            pstmt.setInt(2, 8);
+            pstmt.addBatch();
+            pstmt.setInt(1, 9);
+            pstmt.setInt(2, 10);
+            pstmt.addBatch();
+            pstmt.setInt(1, 11);
+            pstmt.setInt(2, 12);
+            pstmt.addBatch();
+            pstmt.setInt(1, 13);
+            pstmt.setInt(2, 14);
+            pstmt.addBatch();
+            pstmt.setInt(1, 15);
+            pstmt.setInt(2, 16);
+            pstmt.addBatch();
+            pstmt.setInt(1, 17);
+            pstmt.setInt(2, 18);
+            pstmt.addBatch();
+            pstmt.setInt(1, 19);
+            pstmt.setInt(2, 20);
+            pstmt.addBatch(); // 10th
+            
+            int[] outcome = pstmt.executeBatch();
+
+            assertNotNull(outcome);
+            assertEquals(10, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[4]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[5]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[6]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[7]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[8]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[9]);
+            
+        } catch (SQLException sqle) {
+            fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
+        } catch (Exception e) {
+            fail ("Exception ocurred:"+e.getMessage());
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            lowPreparedCon.rollback();
+            close(lowPreparedCon);
         }
     }
     
@@ -153,6 +258,31 @@ public class BatchedInsertReWriteEnabled extends TestCase{
 
         TestUtil.dropTable(con, "testbatch");
         TestUtil.closeDB(con);
+    }
+    
+    private Connection getConnectionWithLowPreparedThreshold()
+        throws Exception
+    {
+        Properties props = new Properties();
+        props.setProperty(PGProperty.REWRITE_BATCHED_INSERTS.getName(), Boolean.TRUE.toString());
+        props.setProperty(PGProperty.PREPARE_THRESHOLD .getName(), "1");
+        
+        Connection connection = TestUtil.openDB(props);
+        
+        connection.setAutoCommit(false);
+
+        return connection;
+    }
+    
+    private void close(Connection connection) 
+    {
+        try {
+            if (connection != null) {
+                connection.close();
+            }   
+        } catch (SQLException sqle) {
+            
+        }
     }
 
 }

@@ -1287,6 +1287,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             // the SimpleParameterList's internal array that might be modified
             // under us.
             query.setStatementName(statementName);
+            statementName = query.getStatementName();
             query.setStatementTypes((int[])typeOIDs.clone());
         }
 
@@ -1295,7 +1296,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         if (logger.logDebug())
         {
-            StringBuilder sbuf = new StringBuilder(" FE=> Parse(stmt=" + statementName + ",query=\"");
+            StringBuilder sbuf = new StringBuilder(" FE=> Parse(stmt=" + query.getStatementName() + ",query=\"");
             if (fragments != null) {
                 for (int i = 0; i < fragments.length; ++i)
                 {

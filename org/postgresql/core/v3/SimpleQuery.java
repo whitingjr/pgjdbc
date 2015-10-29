@@ -293,8 +293,6 @@ class SimpleQuery implements V3Query {
         System.arraycopy(originalTypes, 0, preparedTypes, 0, originalTypes.length);
         fields = new Field[originalFields.length];
         System.arraycopy(originalFields, 0, fields, 0, originalFields.length);
-        statementName=null;
-        encodedStatementName=null;
     }
 
     private String[] fragments;

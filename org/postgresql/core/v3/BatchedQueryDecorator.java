@@ -2,8 +2,8 @@ package org.postgresql.core.v3;
 
 import java.lang.ref.PhantomReference;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
@@ -16,6 +16,8 @@ import static org.postgresql.core.Oid.UNSPECIFIED;
  * Purpose of this object is to support batched query re write 
  * behaviour. Responsibility for tracking the batch size and implement the clean up
  * of the query fragments after the batch execute is complete.
+ * Intended to be used to wrap a Query that is present in the batchStatements
+ * collection.
  * The methods re-direct calls instead to the composed SimpleQuery instance. Rather
  * than the inherited methods.
  * 
@@ -24,17 +26,21 @@ import static org.postgresql.core.Oid.UNSPECIFIED;
  */
 public class BatchedQueryDecorator extends SimpleQuery {
 
-    private SimpleQuery query = null;
+    private SimpleQuery query;
     private final String[] originalFragments ;
     private final int[] originalPreparedTypes;
     private boolean isPreparedTypesSet;
     private final Field[] originalFields;
     private boolean isFieldsSet;
     private int batchedCount = 0;
-    private Set<Integer> isDescribed = new HashSet<Integer>(51);
+    private Map<Integer,Object> isDescribed = new HashMap<Integer,Object>(51);
     private static final String NAME_FORMAT = "%1$s_P%2$d";
-    private String statementName=null;
-    private byte[] encodedName = null;
+    /** statementName is isolated from the query field to allow the prepared 
+     * statement uniqueness to be tracked/detected. same for the encodedName field.
+     */
+    private String statementName;
+    private byte[] encodedName;
+    private String originalParentName;
     
     /**
      * Set up the decorator with data structures that are sized correctly for a batch with a 
@@ -46,8 +52,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         super(null, null); // protoConn is encapsulated. making a constructor call to SQ with object references difficult.
         if (q instanceof SimpleQuery) {
             query = (SimpleQuery)q;
-        }
-        if (query != null) {
+        
             int paramCount = query.getFragments().length - 1;
             
             int fragmentsLength = query.getFragments().length;
@@ -77,6 +82,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     public void reset() {
+        isDescribed.put(getFragments().length-1, null);
         batchedCount = 0;
 
         int[] initializedTypes = null;
@@ -101,9 +107,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
         }
         query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
-        this.statementName = null;
-        this.encodedName = null;
-        
     }
     
     @Override
@@ -118,8 +121,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
         System.arraycopy(additional, 0, replacement, existing.length, additional.length);
         query.clearFragments();
         query.addQueryFragments(replacement);
-        this.statementName=null;
-        this.encodedName=null;
     }
     
     @Override
@@ -137,7 +138,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
      */
     @Override
     public boolean isStatementDescribed() {
-        return isDescribed.contains(getFragments().length-1);
+        return isDescribed.containsKey(getFragments().length-1);
     }
     
     @Override
@@ -180,8 +181,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     String getStatementName() {
-        if (this.statementName==null) {
-            this.statementName=String.format(NAME_FORMAT, query.getStatementName(), getFragments().length-1);
+        String parentName = query.getStatementName();
+        if (this.statementName==null && parentName != null) {
+            if (originalParentName==null) {
+                originalParentName=parentName;
+            }
+            this.statementName=String.format(NAME_FORMAT, originalParentName, getFragments().length-1);
         }
         return this.statementName;
     }
@@ -209,7 +214,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     boolean isPreparedFor(int[] paramTypes) {
-        return query.isPreparedFor(paramTypes);
+        return query.isPreparedFor(paramTypes) && isDescribed.containsKey( getFragments().length -1 );
     }
     
     @Override
@@ -261,7 +266,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     void setStatementDescribed(boolean statementDescribed) {
         if (statementDescribed) {
-            isDescribed.add(getFragments().length-1);
+            isDescribed.put(getFragments().length-1, null);
         } else {
             isDescribed.remove(getFragments().length-1);
         }
@@ -278,23 +283,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
         query.setStatementReWritableInsert(isReWriteable);
     }
     
-    /**
-     * Batched queries may have varying parameter counts. To ensure 
-     * statement uniqueness append the parameter count. Otherwise
-     * the backend will reject a statement with a given name and 
-     * a mismatched parameter count. See PREPARE.
-     */
     @Override
     void setStatementName(String statementName) {
         query.setStatementName(statementName);
-    }
-    
-    boolean isDescribed(int[] preparedTypes) {
-        return originalPreparedTypes.length < preparedTypes.length;
-    }
-    
-    boolean isDescribed(Field[] preparedFields) {
-        return originalFields.length < preparedFields.length;
+        if (originalParentName==null) {
+            originalParentName = statementName;
+        }
     }
     
     /**
