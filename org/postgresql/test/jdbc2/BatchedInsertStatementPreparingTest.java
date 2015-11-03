@@ -31,7 +31,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             pstmt.setInt(1, 3);
             pstmt.setInt(2, 4);
             pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
+            int[] outcome = pstmt.executeBatch(); //1st
 
             assertNotNull(outcome);
             assertEquals(2, outcome.length);
@@ -59,7 +59,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             pstmt.setInt(1, 9);
             pstmt.setInt(2, 10);
             pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
+            int[] outcome = pstmt.executeBatch(); // 1st
 
             assertNotNull(outcome);
             assertEquals(5, outcome.length);
@@ -71,7 +71,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
         } catch (SQLException sqle) {
             fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
         }
-        
+
         try {
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
@@ -79,7 +79,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             pstmt.setInt(1, 3);
             pstmt.setInt(2, 4);
             pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
+            int[] outcome = pstmt.executeBatch(); // 2nd
 
             assertNotNull(outcome);
             assertEquals(2, outcome.length);
@@ -105,7 +105,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             pstmt.setInt(1, 9);
             pstmt.setInt(2, 10);
             pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
+            int[] outcome = pstmt.executeBatch(); // 2nd
 
             assertNotNull(outcome);
             assertEquals(5, outcome.length);
@@ -117,7 +117,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
         } catch (SQLException sqle) {
             fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
         }
-        
+        // at this point the x_P_2 and the x_P_6 statements have been prepared
         try {
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
@@ -125,7 +125,7 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             pstmt.setInt(1, 3);
             pstmt.setInt(2, 4);
             pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
+            int[] outcome = pstmt.executeBatch(); // 3rd
 
             assertNotNull(outcome);
             assertEquals(2, outcome.length);
@@ -151,21 +151,61 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             pstmt.setInt(1, 9);
             pstmt.setInt(2, 10);
             pstmt.addBatch();
-            int[] outcome = pstmt.executeBatch();
+            int[] outcome = pstmt.executeBatch(); // 3rd
 
             assertNotNull(outcome);
-            assertEquals(10, outcome.length);
+            assertEquals(5, outcome.length);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[4]);
-            assertEquals(Statement.SUCCESS_NO_INFO, outcome[5]);
-            assertEquals(Statement.SUCCESS_NO_INFO, outcome[6]);
-            assertEquals(Statement.SUCCESS_NO_INFO, outcome[7]);
-            assertEquals(Statement.SUCCESS_NO_INFO, outcome[8]);
-            assertEquals(Statement.SUCCESS_NO_INFO, outcome[9]);
-            
+        } catch (SQLException sqle) {
+            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
+        }
+        
+        try {
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            int[] outcome = pstmt.executeBatch(); // 4th
+
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+        } catch (SQLException sqle) {
+            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
+        }
+        
+        try {
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();
+            pstmt.setInt(1, 7);
+            pstmt.setInt(2, 8);
+            pstmt.addBatch();
+            pstmt.setInt(1, 9);
+            pstmt.setInt(2, 10);
+            pstmt.addBatch();
+            int[] outcome = pstmt.executeBatch(); // 4th
+
+            assertNotNull(outcome);
+            assertEquals(5, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[4]);
         } catch (SQLException sqle) {
             fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
         } finally {

@@ -120,7 +120,7 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     private static final short ESC_OUTERJOIN = 5;
     private static final short ESC_ESCAPECHAR = 7;
     
-    protected final Query preparedQuery;              // Query fragments for prepared statement.
+    protected Query preparedQuery;              // Query fragments for prepared statement.
     protected final ParameterList preparedParameters; // Parameter values for prepared statement.
     protected Query lastSimpleQuery;
 
@@ -3048,13 +3048,20 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             batchStatements.add(preparedQuery);
             // we need to create copies of our parameters, otherwise the values can be changed
             batchParameters.add(preparedParameters.copy());
-            preparedQuery.incrementBatchSize();
         } else {
-            if (this.connection.isReWriteBatchedInsertsEnabled() && preparedQuery.isStatementReWritableInsert()) {
-                if (this.comparator == null) {
-                    this.comparator = new StatementComparator();
+            if (connection.isReWriteBatchedInsertsEnabled() && preparedQuery.isStatementReWritableInsert()) {
+                if (comparator == null) {
+                    comparator = new StatementComparator();
                 }
-                if (this.comparator.compare((Query)batchStatements.get(batchStatements.size()-1), preparedQuery) == 0) {
+                if (comparator.compare((Query)batchStatements.get(batchStatements.size()-1), preparedQuery) == 0) {
+                    if ( !(preparedQuery instanceof BatchedQueryDecorator) ) {
+                        preparedQuery = new BatchedQueryDecorator(preparedQuery);
+                    }
+                    if (batchStatements.size() == 1) {
+                        batchStatements.remove(0);
+                        batchStatements.add(preparedQuery);
+                    }
+                    
                     reWrite(batchStatements, batchParameters, preparedParameters);
                 }
             }
@@ -3562,13 +3569,14 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
     }
     
     /**
-     * Use this method to rewrite the prior Query sql with additional 
+     * Purpose of this method is to rewrite the prior Query sql with additional 
      * paramaterized fields. Add parameters of the current list to prior.
      * @param batchStatements all the statements 
      * @param batchParameters all the parameters
      * @param preparedParameters all the prepared parameters
      */
-    private Query reWrite(List batchStatements, List batchParameters, ParameterList preparedParameters) {
+    private void reWrite(List batchStatements,
+            List batchParameters, ParameterList preparedParameters) {
         int tail = batchStatements.size()-1;
         Query prior = (Query)batchStatements.get(tail);
         BatchedQueryDecorator decoratedQuery = null;
@@ -3585,7 +3593,8 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         final int priorPosition = fragments.length -1; 
         fragments[priorPosition] = fragments[priorPosition] + ",(";
 
-        decoratedQuery.addQueryFragments(formatQueryFragments(preparedParameters.getInParameterCount()));
+        decoratedQuery.addQueryFragments(formatQueryFragments(
+                preparedParameters.getInParameterCount()));
         // create a new paramlist that is sized correctly
         ParameterList replacement = decoratedQuery.createParameterList();
         ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size()-1);
@@ -3610,12 +3619,6 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             decoratedQuery.setStatementTypes(replacementPreparedTypes);
         }
         
-        return decoratedQuery;
-    }
-    
-    int asArrayPos(int pos)
-    {
-        return pos -= 1;
     }
     
     /**

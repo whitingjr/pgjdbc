@@ -17,9 +17,9 @@ import static org.postgresql.core.Oid.UNSPECIFIED;
  * behaviour. Responsibility for tracking the batch size and implement the clean up
  * of the query fragments after the batch execute is complete.
  * Intended to be used to wrap a Query that is present in the batchStatements
- * collection.
- * The methods re-direct calls instead to the composed SimpleQuery instance. Rather
- * than the inherited methods.
+ * collection. Or wrap the preparedQuery to add described status tracking for
+ * individual Statements varying by parameter count.  
+ * The methods re-direct calls to the composed SimpleQuery instance.
  * 
  * @author Jeremy Whiting
  *
@@ -32,14 +32,15 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private boolean isPreparedTypesSet;
     private final Field[] originalFields;
     private boolean isFieldsSet;
-    private int batchedCount = 0;
+    private int batchedQueryCount = 1;
     private Map<Integer,Object> isDescribed = new HashMap<Integer,Object>(51);
+    private Map<Integer,Object> isParsed = new HashMap<Integer,Object>(51);
     private static final String NAME_FORMAT = "%1$s_P_%2$d";
     /** statementName is isolated from the query field to allow the prepared 
      * statement uniqueness to be tracked/detected. same for the encodedName field.
      */
-    private String statementName;
-    private byte[] encodedName;
+    private String batchedStatementName;
+    private byte[] batchedEncodedName;
     private String originalParentName;
     
     /**
@@ -78,12 +79,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
             originalPreparedTypes = new int[0];
             originalFields = new Field[0];
         }
-        batchedCount = q.getBatchSize();
     }
     
     public void reset() {
-        batchedCount = 0;
-        isDescribed.put(getFragments().length-1, null);
+        batchedQueryCount = 1;
         
         int[] initializedTypes = null;
         for (int pos = 0; pos < originalPreparedTypes.length; pos += 1) {
@@ -111,7 +110,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     public int getBatchSize() {
-        return batchedCount;
+        return batchedQueryCount;
     }
     
     public void addQueryFragments( String[] additional ) {
@@ -130,7 +129,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     public void incrementBatchSize() {
-        batchedCount += 1;
+        batchedQueryCount += 1;
     }
     
     /**
@@ -138,7 +137,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
      */
     @Override
     public boolean isStatementDescribed() {
-        return isDescribed.containsKey(getFragments().length-1);
+        return isDescribed.containsKey(getCurrentParameterCount());
     }
     
     @Override
@@ -182,13 +181,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     String getStatementName() {
         String parentName = query.getStatementName();
-        if (this.statementName==null && parentName != null) {
+        if (this.batchedStatementName==null && parentName != null) {
             if (originalParentName==null) {
                 originalParentName=parentName;
             }
-            this.statementName=String.format(NAME_FORMAT, originalParentName, getFragments().length-1);
+            batchedStatementName=String.format(NAME_FORMAT, originalParentName, getFragments().length-1);
         }
-        return this.statementName;
+        return batchedStatementName;
     }
     
     /**
@@ -214,7 +213,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     boolean isPreparedFor(int[] paramTypes) {
-        return query.isPreparedFor(paramTypes) && isDescribed.containsKey( getFragments().length -1 );
+        return query.isPreparedFor(paramTypes) && isStatementParsed()  ;
     }
     
     @Override
@@ -224,10 +223,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     byte[] getEncodedStatementName() {
-        if (this.encodedName==null) {
-            this.encodedName = Utils.encodeUTF8(getStatementName());
+        if (batchedEncodedName==null) {
+            batchedEncodedName = Utils.encodeUTF8(getStatementName());
         }
-        return this.encodedName;
+        return batchedEncodedName;
     }
     
     /**
@@ -381,6 +380,28 @@ public class BatchedQueryDecorator extends SimpleQuery {
             if (pos==maxPos) {
                 isPreparedTypesSet=true;
             }
+        }
+    }
+    
+    private int getCurrentParameterCount() {
+        return (getFragments().length -1) ;
+    }
+    
+    private boolean isStatementParsed() {
+        return isParsed.containsKey(getCurrentParameterCount());
+    }
+    
+    /**
+     * Method to receive notification of the parsed/prepared status of the
+     * statement.
+     * @param prepared state
+     */
+    public void registerQueryParsedStatus(boolean prepared) {
+        int k = getCurrentParameterCount();
+        if (prepared && !isParsed.containsKey(k)) {
+            isParsed.put(k,null);
+        } else {
+            isParsed.remove(k);
         }
     }
 }

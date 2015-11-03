@@ -1367,6 +1367,9 @@ public class QueryExecutorImpl implements QueryExecutor {
             pgStream.SendInteger4(params.getTypeOID(i));
 
         pendingParseQueue.add(new Object[]{query, query.getStatementName()});
+        if (query instanceof BatchedQueryDecorator) { // not waiting for async message
+            ((BatchedQueryDecorator) query).registerQueryParsedStatus(true);
+        }
     }
 
     private void sendBind(SimpleQuery query, SimpleParameterList params,
@@ -1690,6 +1693,10 @@ public class QueryExecutorImpl implements QueryExecutor {
                     params.setResolvedType(i+1, queryOIDs[i]);
                 }
             }
+        }
+        
+        if (query instanceof BatchedQueryDecorator) {
+            
         }
 
         if (describeStatement) {
