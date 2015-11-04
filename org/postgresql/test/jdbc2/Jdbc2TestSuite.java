@@ -73,6 +73,7 @@ public class Jdbc2TestSuite extends TestSuite
         suite.addTestSuite(BatchExecuteTest.class);
         suite.addTestSuite(BatchedInsertReWriteEnabledTest.class);
         suite.addTestSuite(BatchedInsertStatementPreparingTest.class);
+        suite.addTestSuite(HackersBatchedInsertStatementTest.class);
 
         // Other misc tests, based on previous problems users have had or specific
         // features some applications require.

@@ -27,7 +27,6 @@ public class BatchedInsertReWriteEnabledTest extends TestCase{
              * The connection is configured so the batch rewrite optimization
              * is enabled. See setUp()
              */
-            
             pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
