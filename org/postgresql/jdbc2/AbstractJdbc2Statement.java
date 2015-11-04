@@ -3043,7 +3043,10 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             batchStatements = new ArrayList();
             batchParameters = new ArrayList();
         }
-
+        /** On the initial pass assume no batch re-write is going to occur. 
+         * Following passes check for basic compatibility to re-write. When
+         * compatible then wrap the preparedQuery and collapse the statements.
+         */
         if (batchStatements.size() == 0) {
             batchStatements.add(preparedQuery);
             // we need to create copies of our parameters, otherwise the values can be changed
@@ -3057,11 +3060,11 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
                     if ( !(preparedQuery instanceof BatchedQueryDecorator) ) {
                         preparedQuery = new BatchedQueryDecorator(preparedQuery);
                     }
-                    if (batchStatements.size() == 1) {
+                    if (!(batchStatements.get(0) instanceof BatchedQueryDecorator) ) {
                         batchStatements.remove(0);
                         batchStatements.add(preparedQuery);
                     }
-                    
+                        
                     reWrite(batchStatements, batchParameters, preparedParameters);
                 }
             }

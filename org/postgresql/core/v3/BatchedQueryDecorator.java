@@ -106,6 +106,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         }
         query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
+        setStatementName(null);
     }
     
     @Override
@@ -185,7 +186,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
             if (originalParentName==null) {
                 originalParentName=parentName;
             }
-            batchedStatementName=String.format(NAME_FORMAT, originalParentName, getFragments().length-1);
+            batchedStatementName=String.format(NAME_FORMAT, originalParentName, getCurrentParameterCount());
         }
         return batchedStatementName;
     }
@@ -283,9 +284,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     void setStatementName(String statementName) {
-        query.setStatementName(statementName);
-        if (originalParentName==null) {
-            originalParentName = statementName;
+        if (statementName == null) {
+            batchedStatementName = null;
+        } else {
+            query.setStatementName(statementName);
+            if (originalParentName==null) {
+                originalParentName = statementName;
+            }
         }
     }
     

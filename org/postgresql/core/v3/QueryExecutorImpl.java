@@ -1695,10 +1695,6 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
         
-        if (query instanceof BatchedQueryDecorator) {
-            
-        }
-
         if (describeStatement) {
             sendDescribeStatement(query, params, describeOnly);
             if (describeOnly)
