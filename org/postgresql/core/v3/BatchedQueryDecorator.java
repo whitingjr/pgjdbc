@@ -107,6 +107,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
         setStatementName(null);
+        batchedEncodedName = null;
     }
     
     @Override
@@ -243,6 +244,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
         }
     }
     
+    /**
+     * The driver does depend on
+     * null rather than empty collection.
+     * @return known fields or null
+     */
     @Override
     public Field[] getFields() {
         // changed during Describe or reWrite.

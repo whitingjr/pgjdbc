@@ -121,6 +121,61 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(3, bqd.getBatchSize());
             assertEquals(7, bqd.getFragments().length);
             assertEquals(6, bqd.getStatementTypes().length);
+            
+            Field fBSN = BatchedQueryDecorator.class.getDeclaredField("batchedStatementName");
+            assertNotNull(fBSN);
+            fBSN.setAccessible(true);
+            
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(3, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            
+            assertEquals(null, fBSN.get(bqd));
+            
+            assertEquals(1, bqd.getBatchSize());
+            assertNotNull(bqd.getStatementTypes());
+            assertEquals(2, bqd.getStatementTypes().length);
+            assertNotNull(bqd.getFragments());
+            assertEquals(initStmtFragCount, bqd.getFragments().length);
+            assertEquals(initParamCount, bqd.getStatementTypes().length);
+            assertEquals(initParamCount, resetParamCount);
+            
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch(); //initial pass
+            assertEquals(1, bqd.getBatchSize());
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            assertEquals(2, bqd.getBatchSize());
+            assertEquals(5, bqd.getFragments().length);
+            assertEquals(4, bqd.getStatementTypes().length);
+            
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();
+            assertEquals(3, bqd.getBatchSize());
+            assertEquals(7, bqd.getFragments().length);
+            assertEquals(6, bqd.getStatementTypes().length);
+            
+            pstmt.setInt(1, 7);
+            pstmt.setInt(2, 8);
+            pstmt.addBatch();
+            assertEquals(4, bqd.getBatchSize());
+            assertEquals(9, bqd.getFragments().length);
+            assertEquals(8, bqd.getStatementTypes().length);
+            
+
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(4, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
 
             
             
