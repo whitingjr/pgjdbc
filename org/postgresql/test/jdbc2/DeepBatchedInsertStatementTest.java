@@ -72,7 +72,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
             pstmt.setInt(2, 6);
             pstmt.addBatch();//statement three, this should be collapsed into prior statement
             batchedCount = bqd.getBatchSize();
-            
+
             assertEquals(3, batchedCount);
             
             int[] outcome = pstmt.executeBatch();
@@ -83,19 +83,6 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
 
-            Method mgSN = BatchedQueryDecorator.class.getDeclaredMethod("getStatementName", new Class[]{});
-            mgSN.setAccessible(true);
-            assertNotNull(mgSN);
-            Object obsn = mgSN.invoke(bqd, new Object[]{});
-            assertNotNull(obsn);
-            assertTrue(obsn instanceof String);
-            String bsn = (String)obsn;
-            
-            ResultSet rs = con.createStatement().executeQuery(
-                    "select * from pg_prepared_statements where name='"+bsn+"'");
-            assertNotNull(rs);
-            assertEquals(1, rs.getFetchSize());
-            
             /* The statement will have been reset. */
             Method m = BatchedQueryDecorator.class.getDeclaredMethod("getCurrentParameterCount", new Class[]{});
             m.setAccessible(true);
@@ -137,6 +124,14 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(7, bqd.getFragments().length);
             assertEquals(6, bqd.getStatementTypes().length);
             
+            Method mgSN = BatchedQueryDecorator.class.getDeclaredMethod("getStatementName", new Class[]{});
+            mgSN.setAccessible(true);
+            assertNotNull(mgSN);
+            Object obsn = mgSN.invoke(bqd, new Object[]{});
+            assertNotNull(obsn);
+            assertTrue(obsn instanceof String);
+            String bsn = (String)obsn;
+            
             outcome = pstmt.executeBatch();
             assertNotNull(outcome);
             assertEquals(3, outcome.length);
@@ -145,6 +140,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             
             Field fBSN = BatchedQueryDecorator.class.getDeclaredField("batchedStatementName");
+            fBSN.setAccessible(true);
             assertNotNull(fBSN);
             assertEquals(null, fBSN.get(bqd));
             
@@ -156,9 +152,14 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(initParamCount, bqd.getStatementTypes().length);
             assertEquals(initParamCount, resetParamCount);
             
+            ResultSet rs = con.createStatement().executeQuery(
+                    "select * from pg_prepared_statements where name='"+bsn+"'");
+            assertNotNull(rs);
+            assertEquals(1, rs.getFetchSize());
+            
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
-            pstmt.addBatch(); //initial pass
+            pstmt.addBatch(); //initial pass _8
             assertEquals(1, bqd.getBatchSize());
             pstmt.setInt(1, 3);
             pstmt.setInt(2, 4);
