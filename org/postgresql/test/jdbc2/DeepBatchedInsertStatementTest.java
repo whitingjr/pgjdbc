@@ -12,6 +12,7 @@ import java.util.Properties;
 import junit.framework.TestCase;
 
 import org.postgresql.PGProperty;
+import org.postgresql.PGStatement;
 import org.postgresql.core.Query;
 import org.postgresql.core.v3.BatchedQueryDecorator;
 import org.postgresql.jdbc2.AbstractJdbc2Statement;
@@ -36,6 +37,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
              * is enabled. See setUp()
              */
             pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+            
             int initParamCount = 2;
             int initStmtFragCount = 3;
             assertTrue(pstmt instanceof AbstractJdbc2Statement);
@@ -151,11 +153,11 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(initStmtFragCount, bqd.getFragments().length);
             assertEquals(initParamCount, bqd.getStatementTypes().length);
             assertEquals(initParamCount, resetParamCount);
-            
-            ResultSet rs = con.createStatement().executeQuery(
-                    "select * from pg_prepared_statements where name='"+bsn+"'");
-            assertNotNull(rs);
-            assertEquals(1, rs.getFetchSize());
+            con.commit();
+//            ResultSet rs = con.createStatement().executeQuery(
+//                    "select * from pg_prepared_statements where name='"+bsn+"'");
+//            assertNotNull(rs);
+//            assertEquals(1, rs.getFetchSize());
             
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);
@@ -191,7 +193,30 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
 
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch(); //initial pass _6
+            assertEquals(1, bqd.getBatchSize());
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            assertEquals(2, bqd.getBatchSize());
+            assertEquals(5, bqd.getFragments().length);
+            assertEquals(4, bqd.getStatementTypes().length);
             
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();
+            assertEquals(3, bqd.getBatchSize());
+            assertEquals(7, bqd.getFragments().length);
+            assertEquals(6, bqd.getStatementTypes().length);
+            
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(3, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             
         } catch (SQLException sqle) {
             fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());

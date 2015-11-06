@@ -34,14 +34,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private boolean isFieldsSet;
     private int batchedQueryCount = 1;
     private Map<Integer,Object> isDescribed = new HashMap<Integer,Object>(51);
-    private Map<Integer,Object> isParsed = new HashMap<Integer,Object>(51);
+    private Integer isParsed = null;
     private static final String NAME_FORMAT = "%1$s_P_%2$d";
     /** statementName is isolated from the query field to allow the prepared 
      * statement uniqueness to be tracked/detected. same for the encodedName field.
      */
     private String batchedStatementName;
     private byte[] batchedEncodedName;
-    private String originalParentName;
     
     /**
      * Set up the decorator with data structures that are sized correctly for a batch with a 
@@ -182,14 +181,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     String getStatementName() {
-        String parentName = query.getStatementName();
-        if (this.batchedStatementName==null && parentName != null) {
-            if (originalParentName==null) {
-                originalParentName=parentName;
-            }
-            batchedStatementName=String.format(NAME_FORMAT, originalParentName, getCurrentParameterCount());
-        }
-        return batchedStatementName;
+//        String parentName = query.getStatementName();
+//        if (this.batchedStatementName==null && parentName != null) {
+//            batchedStatementName=String.format(NAME_FORMAT, parentName, getCurrentParameterCount());
+//        }
+//        return batchedStatementName;
+        return query.getStatementName();
     }
     
     /**
@@ -294,9 +291,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
             batchedStatementName = null;
         } else {
             query.setStatementName(statementName);
-            if (originalParentName==null) {
-                originalParentName = statementName;
-            }
         }
     }
     
@@ -399,7 +393,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     private boolean isStatementParsed() {
-        return isParsed.containsKey(getCurrentParameterCount());
+        return isParsed.equals(getCurrentParameterCount());
     }
     
     /**
@@ -408,11 +402,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
      * @param prepared state
      */
     public void registerQueryParsedStatus(boolean prepared) {
-        int k = getCurrentParameterCount();
-        if (prepared && !isParsed.containsKey(k)) {
-            isParsed.put(k,null);
-        } else {
-            isParsed.remove(k);
-        }
+        isParsed = getCurrentParameterCount();
     }
 }
