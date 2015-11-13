@@ -1,27 +1,25 @@
 package org.postgresql.core.v3;
 
+import static org.postgresql.core.Oid.UNSPECIFIED;
+
 import java.lang.ref.PhantomReference;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.postgresql.core.Field;
 import org.postgresql.core.ParameterList;
 import org.postgresql.core.Query;
 import org.postgresql.core.Utils;
 
-import static org.postgresql.core.Oid.UNSPECIFIED;
-
 /**
  * Purpose of this object is to support batched query re write 
  * behaviour. Responsibility for tracking the batch size and implement the clean up
  * of the query fragments after the batch execute is complete.
  * Intended to be used to wrap a Query that is present in the batchStatements
- * collection. Or wrap the preparedQuery to add described status tracking for
+ * collection. Or wrap the preparedQuery to add parsed status tracking for
  * individual Statements varying by parameter count.  
  * The methods re-direct calls to the composed SimpleQuery instance.
  * 
- * @author Jeremy Whiting
+ * @author Jeremy Whiting jwhiting@redhat.com
  *
  */
 public class BatchedQueryDecorator extends SimpleQuery {
@@ -33,19 +31,15 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private final Field[] originalFields;
     private boolean isFieldsSet;
     private int batchedQueryCount = 1;
-    private Map<Integer,Object> isDescribed = new HashMap<Integer,Object>(51);
     private Integer isParsed = null;
-    private static final String NAME_FORMAT = "%1$s_P_%2$d";
-    /** statementName is isolated from the query field to allow the prepared 
-     * statement uniqueness to be tracked/detected. same for the encodedName field.
-     */
+
     private String batchedStatementName;
     private byte[] batchedEncodedName;
     
     /**
      * Set up the decorator with data structures that are sized correctly for a batch with a 
      * single row. Sizing for meta data needs to be the same. Meta data may not be available
-     * yet. Type information should be available after a ParameterDescription message is processed.
+     * yet.
      * @param q
      */
     public BatchedQueryDecorator(Query q) {
@@ -107,6 +101,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         query.resetBatchedCount();
         setStatementName(null);
         batchedEncodedName = null;
+        assert query.getStatementTypes().length == initializedTypes.length;
     }
     
     @Override
@@ -138,7 +133,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
      */
     @Override
     public boolean isStatementDescribed() {
-        return isDescribed.containsKey(getCurrentParameterCount());
+        return query.isStatementDescribed();
     }
     
     @Override
@@ -181,17 +176,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     String getStatementName() {
-//        String parentName = query.getStatementName();
-//        if (this.batchedStatementName==null && parentName != null) {
-//            batchedStatementName=String.format(NAME_FORMAT, parentName, getCurrentParameterCount());
-//        }
-//        return batchedStatementName;
         return query.getStatementName();
     }
     
     /**
-     * Detect if a Describe has been processed. The original meta data may need
-     * updating.
+     * The original meta data may need updating.
      */
     @Override
     public void setStatementTypes(int[] paramTypes) {
@@ -223,14 +212,16 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     byte[] getEncodedStatementName() {
         if (batchedEncodedName==null) {
-            batchedEncodedName = Utils.encodeUTF8(getStatementName());
+            String n = getStatementName();
+            if (n != null) {
+                batchedEncodedName = Utils.encodeUTF8(n);
+            }
         }
         return batchedEncodedName;
     }
     
     /**
-     * Detect if a Describe has been processed. The original meta data may need
-     * updating.
+     * The original meta data may need updating.
      */
     @Override
     public void setFields(Field[] fields) {
@@ -248,7 +239,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
      */
     @Override
     public Field[] getFields() {
-        // changed during Describe or reWrite.
+        // changed during Describe
         Field[] current = query.getFields();
         if (isOriginalStale(current)) {
             updateOriginal(current);
@@ -268,11 +259,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     
     @Override
     void setStatementDescribed(boolean statementDescribed) {
-        if (statementDescribed) {
-            isDescribed.put(getFragments().length-1, null);
-        } else {
-            isDescribed.remove(getFragments().length-1);
-        }
+        query.setStatementDescribed(statementDescribed);
     }
     
     @Override
@@ -324,9 +311,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     
     /**
-     * Detect when the vanilla prepared type meta data is out of date. It
-     * indicates since construction a ParameterDescription message has been 
-     * processed. This object needs updating.
+     * Detect when the vanilla prepared type meta data is out of date.
      * @param preparedTypes meta data to compare with
      * @return true if the constructed meta data is out of date
      */
@@ -379,11 +364,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
         }
         int maxPos = originalPreparedTypes.length -1;
         for (int pos = 0; pos <= maxPos; pos++) {
-            if (originalPreparedTypes[pos]==UNSPECIFIED && preparedTypes[pos]!=UNSPECIFIED) {
+            if (preparedTypes[pos]!=UNSPECIFIED && originalPreparedTypes[pos]==UNSPECIFIED ) {
                 originalPreparedTypes[pos]=preparedTypes[pos];
-            }
-            if (pos==maxPos) {
-                isPreparedTypesSet=true;
             }
         }
     }

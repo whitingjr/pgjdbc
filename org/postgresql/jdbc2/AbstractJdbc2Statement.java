@@ -2956,17 +2956,20 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
 	}
 	
         int batchSize = queries[0].getBatchSize();
-        if (queries[0].isStatementReWritableInsert() && batchSize > 1 ) {
+        if (queries[0].isStatementReWritableInsert() && batchSize > 1 ) 
+        {
             updateCounts = new int[batchSize];
             /* In this situation there is a batch that has been rewritten. Substitute
             * the running total returned by the database with a status code to
             * indicate successful completion for each row the driver client added
             * to the batch.
             */
-            for (int i = 0; i < batchSize; i += 1 ) {
+            for (int i = 0; i < batchSize; i += 1 ) 
+            {
                 updateCounts[i] = Statement.SUCCESS_NO_INFO;
             }
-            if (queries[0] instanceof BatchedQueryDecorator) {
+            if (queries[0] instanceof BatchedQueryDecorator) 
+            {
                 ((BatchedQueryDecorator) queries[0]).reset(); // only BQD when batchSize == 1
             }
         }
@@ -3616,12 +3619,17 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
         }
         
         int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
+        int[] userTypeInformation = preparedParameters.getTypeOIDs();
         if (oldPreparedTypes != null && oldPreparedTypes.length > 0 && oldPreparedTypes[0] != UNSPECIFIED) {
             int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, oldPreparedTypes.length + singleBatchparamCount);
             System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
             decoratedQuery.setStatementTypes(replacementPreparedTypes);
+            assert replacementPreparedTypes.length == decoratedQuery.getStatementTypes().length: String.format("this:[%1$d] should equal this [%2$d] ", replacementPreparedTypes.length, decoratedQuery.getStatementTypes().length);
+        } else if (userTypeInformation != null && userTypeInformation.length > 0
+                && userTypeInformation[0] != UNSPECIFIED 
+                && userTypeInformation.length == singleBatchparamCount) {
+            decoratedQuery.setStatementTypes(userTypeInformation);
         }
-        
     }
     
     /**

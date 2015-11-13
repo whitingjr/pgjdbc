@@ -3,20 +3,22 @@ package org.postgresql.test.jdbc2;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.Properties;
 
 import junit.framework.TestCase;
 
 import org.postgresql.PGProperty;
-import org.postgresql.PGStatement;
+import org.postgresql.core.Oid;
 import org.postgresql.core.Query;
 import org.postgresql.core.v3.BatchedQueryDecorator;
 import org.postgresql.jdbc2.AbstractJdbc2Statement;
 import org.postgresql.test.TestUtil;
+
 
 /**
  * This object tests the internals of the BatchedStatementDecorator during
@@ -67,7 +69,6 @@ public class DeepBatchedInsertStatementTest extends TestCase
             BatchedQueryDecorator bqd = (BatchedQueryDecorator)fObject;
             int batchedCount = bqd.getBatchSize(); 
             assertEquals(2, batchedCount);
-            assertTrue(bqd.getStatementTypes() == null);
             assertNotNull(bqd.getFragments());
 
             pstmt.setInt(1, 5);
@@ -76,7 +77,10 @@ public class DeepBatchedInsertStatementTest extends TestCase
             batchedCount = bqd.getBatchSize();
 
             assertEquals(3, batchedCount);
-            
+            int[] types = bqd.getStatementTypes();
+            assertEquals(4, types.length);
+            assertEquals(Oid.INT4, types[0]);
+            assertEquals(Oid.INT4, types[1]);
             int[] outcome = pstmt.executeBatch();
             
             assertNotNull(outcome);
@@ -218,8 +222,122 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch(); //initial pass _6
+            assertEquals(1, bqd.getBatchSize());
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            assertEquals(2, bqd.getBatchSize());
+            assertEquals(5, bqd.getFragments().length);
+            assertEquals(4, bqd.getStatementTypes().length);
+            
+            pstmt.setInt(1, 5);
+            pstmt.setInt(2, 6);
+            pstmt.addBatch();
+            assertEquals(3, bqd.getBatchSize());
+            assertEquals(7, bqd.getFragments().length);
+            assertEquals(6, bqd.getStatementTypes().length);
+            
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(3, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch(); //initial pass _6
+            assertEquals(1, bqd.getBatchSize());
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            assertEquals(2, bqd.getBatchSize());
+            assertEquals(5, bqd.getFragments().length);
+            assertEquals(4, bqd.getStatementTypes().length);
+            
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
         } catch (SQLException sqle) {
             fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
+        } catch (Exception e) {
+            if (e.getCause() == null) {
+                fail (String.format("Exception thrown:[%1$s]", e.getMessage()));
+            } else {
+                fail (String.format("Exception thrown:[%1$s] cause [%2$s]", e.getMessage(),e.getCause().getMessage()));
+            }
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    }
+    
+    /** 
+     * 
+     */
+    public void testUnspecifiedParameterType()
+        throws SQLException{
+        PreparedStatement pstmt = null;
+        try {
+            /*
+             * The connection is configured so the batch rewrite optimization
+             * is enabled. See setUp()
+             */
+            pstmt = con.prepareStatement("INSERT INTO testunspecified VALUES (?,?)");
+            
+            pstmt.setInt(1, 1);
+            pstmt.setDate(2, new Date(1970, 01, 01));
+            pstmt.addBatch();
+            
+            pstmt.setInt(1, 2);
+            pstmt.setDate(2, new Date(1971, 01, 01));
+            pstmt.addBatch();
+            
+            assertTrue(pstmt instanceof AbstractJdbc2Statement);
+            AbstractJdbc2Statement s = (AbstractJdbc2Statement)pstmt;
+            Field f = AbstractJdbc2Statement.class.getDeclaredField("preparedQuery");
+            assertNotNull(f);
+            f.setAccessible(true);
+            Object fObject = f.get(s);
+            assertNotNull(fObject);
+            assertTrue(fObject instanceof BatchedQueryDecorator);
+            BatchedQueryDecorator bqd = (BatchedQueryDecorator)fObject;
+            int[] types = bqd.getStatementTypes();
+            assertNotNull(types);
+            assertEquals(2, types.length);
+            assertEquals(Oid.INT4, types[0]);
+            assertEquals(Oid.UNSPECIFIED, types[1]);
+            
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            
+            pstmt.setInt(1, 1);
+            pstmt.setDate(2, new Date(1970, 01, 01));
+            pstmt.addBatch();
+            pstmt.setInt(1, 2);
+            pstmt.setDate(2, new Date(1971, 01, 01));
+            pstmt.addBatch();
+            
+            types = bqd.getStatementTypes();
+            assertEquals(Oid.INT4, types[0]);
+            assertFalse(Oid.UNSPECIFIED == types[1]);
+            outcome = pstmt.executeBatch();
+            
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            
+        } catch (SQLException sqle) {
+            fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
         } catch (Exception e) {
             if (e.getCause() == null) {
                 fail (String.format("Exception thrown:[%1$s]", e.getMessage()));
@@ -254,6 +372,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
         // Drop the test table if it already exists for some reason. It is
         // not an error if it doesn't exist.
         TestUtil.createTable(con, "testbatch", "pk INTEGER, col1 INTEGER");
+        TestUtil.createTable(con, "testunspecified", "pk INTEGER, bday TIMESTAMP");
 
         stmt.executeUpdate("INSERT INTO testbatch VALUES (1, 0)");
         stmt.close();
@@ -271,9 +390,9 @@ public class DeepBatchedInsertStatementTest extends TestCase
         con.setAutoCommit(true);
 
         TestUtil.dropTable(con, "testbatch");
+        TestUtil.dropTable(con, "testunspecified");
         TestUtil.closeDB(con);
     }
 
     private Connection con;
-    
 }

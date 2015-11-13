@@ -130,7 +130,7 @@ public class BatchedInsertReWriteEnabledTest extends TestCase{
             fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
         } finally {
             if (null != pstmt) {pstmt.close();}
-//            con.rollback();
+            con.rollback();
         }
     }
     

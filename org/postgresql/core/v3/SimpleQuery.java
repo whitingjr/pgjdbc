@@ -158,6 +158,7 @@ class SimpleQuery implements V3Query {
         if (statementName == null)
             return false; // Not prepared.
 
+        assert paramTypes.length == preparedTypes.length : String.format("paramTypes:%1$d preparedTypes:%2$d", paramTypes.length, preparedTypes.length);
         // Check for compatible types.
         for (int i = 0; i < paramTypes.length; ++i)
             if (paramTypes[i] != Oid.UNSPECIFIED && paramTypes[i] != preparedTypes[i])
