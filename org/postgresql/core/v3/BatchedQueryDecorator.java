@@ -198,6 +198,23 @@ public class BatchedQueryDecorator extends SimpleQuery {
              * been called. */
             updateOriginal(types);
         }
+        return resizeTypes(types);
+        // provide types depending on batch size, which may vary
+//        int expected = getCurrentParameterCount()*getBatchSize();
+//        
+//        if (types != null && types.length < expected){
+//            types = Arrays.copyOf(originalPreparedTypes, expected);
+//            for (int row = 1; row < getBatchSize(); row += 1) {
+//                System.arraycopy(originalPreparedTypes, 0, types, 
+//                    row*originalPreparedTypes.length-1, originalPreparedTypes.length);
+//            }
+//        }
+    }
+    
+    /** 
+     * Check fields and update if out of sync
+     */
+    private int[] resizeTypes(int[] types) {
         // provide types depending on batch size, which may vary
         int expected = getCurrentParameterCount()*getBatchSize();
         
@@ -208,11 +225,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
                     row*originalPreparedTypes.length-1, originalPreparedTypes.length);
             }
         }
+        query.setStatementTypes(types);
         return types;
     }
     
     @Override
     boolean isPreparedFor(int[] paramTypes) {
+        //TODO: update internal structures.
         return query.isPreparedFor(paramTypes) && isStatementParsed()  ;
     }
     

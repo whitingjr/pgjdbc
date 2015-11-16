@@ -158,10 +158,6 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(initParamCount, bqd.getStatementTypes().length);
             assertEquals(initParamCount, resetParamCount);
             con.commit();
-//            ResultSet rs = con.createStatement().executeQuery(
-//                    "select * from pg_prepared_statements where name='"+bsn+"'");
-//            assertNotNull(rs);
-//            assertEquals(1, rs.getFetchSize());
             
             pstmt.setInt(1, 1);
             pstmt.setInt(2, 2);

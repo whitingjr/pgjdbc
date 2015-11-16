@@ -3618,18 +3618,18 @@ public abstract class AbstractJdbc2Statement implements BaseStatement
             decoratedQuery.setFields(replacementFields);
         }
         
-        int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
-        int[] userTypeInformation = preparedParameters.getTypeOIDs();
-        if (oldPreparedTypes != null && oldPreparedTypes.length > 0 && oldPreparedTypes[0] != UNSPECIFIED) {
-            int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, oldPreparedTypes.length + singleBatchparamCount);
-            System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
-            decoratedQuery.setStatementTypes(replacementPreparedTypes);
-            assert replacementPreparedTypes.length == decoratedQuery.getStatementTypes().length: String.format("this:[%1$d] should equal this [%2$d] ", replacementPreparedTypes.length, decoratedQuery.getStatementTypes().length);
-        } else if (userTypeInformation != null && userTypeInformation.length > 0
-                && userTypeInformation[0] != UNSPECIFIED 
-                && userTypeInformation.length == singleBatchparamCount) {
-            decoratedQuery.setStatementTypes(userTypeInformation);
-        }
+//        int[] oldPreparedTypes = decoratedQuery.getStatementTypes();
+//        int[] userTypeInformation = preparedParameters.getTypeOIDs();
+//        if (oldPreparedTypes != null && oldPreparedTypes.length > 0 && oldPreparedTypes[0] != UNSPECIFIED) {
+//            int[] replacementPreparedTypes = Arrays.copyOf(oldPreparedTypes, oldPreparedTypes.length + singleBatchparamCount);
+//            System.arraycopy(oldPreparedTypes, 0, replacementPreparedTypes, oldPreparedTypes.length, singleBatchparamCount);
+//            decoratedQuery.setStatementTypes(replacementPreparedTypes);
+//            assert replacementPreparedTypes.length == decoratedQuery.getStatementTypes().length: String.format("this:[%1$d] should equal this [%2$d] ", replacementPreparedTypes.length, decoratedQuery.getStatementTypes().length);
+//        } else if (userTypeInformation != null && userTypeInformation.length > 0
+//                && userTypeInformation[0] != UNSPECIFIED 
+//                && userTypeInformation.length == singleBatchparamCount) {
+//            decoratedQuery.setStatementTypes(userTypeInformation);
+//        }
     }
     
     /**
