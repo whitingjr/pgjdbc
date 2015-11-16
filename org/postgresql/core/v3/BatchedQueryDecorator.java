@@ -198,40 +198,39 @@ public class BatchedQueryDecorator extends SimpleQuery {
              * been called. */
             updateOriginal(types);
         }
-        return resizeTypes(types);
-        // provide types depending on batch size, which may vary
-//        int expected = getCurrentParameterCount()*getBatchSize();
-//        
-//        if (types != null && types.length < expected){
-//            types = Arrays.copyOf(originalPreparedTypes, expected);
-//            for (int row = 1; row < getBatchSize(); row += 1) {
-//                System.arraycopy(originalPreparedTypes, 0, types, 
-//                    row*originalPreparedTypes.length-1, originalPreparedTypes.length);
-//            }
-//        }
+        return resizeTypes();
     }
     
     /** 
      * Check fields and update if out of sync
      */
-    private int[] resizeTypes(int[] types) {
+    private int[] resizeTypes() {
         // provide types depending on batch size, which may vary
-        int expected = getCurrentParameterCount()*getBatchSize();
+        int expected = (originalFragments.length-1)*getBatchSize();
+        int[] types = query.getStatementTypes();
         
-        if (types != null && types.length < expected){
-            types = Arrays.copyOf(originalPreparedTypes, expected);
-            for (int row = 1; row < getBatchSize(); row += 1) {
-                System.arraycopy(originalPreparedTypes, 0, types, 
-                    row*originalPreparedTypes.length-1, originalPreparedTypes.length);
-            }
+        if (types == null) {
+            types = fill(expected);
+        }
+        if (types.length < expected){
+            types = fill(expected);
         }
         query.setStatementTypes(types);
         return types;
     }
     
+    private int[] fill(int expected){
+        int[] types = Arrays.copyOf(originalPreparedTypes, expected);
+        for (int row = 1; row < getBatchSize(); row += 1) {
+            System.arraycopy(originalPreparedTypes, 0, types, 
+                row*originalPreparedTypes.length, originalPreparedTypes.length);
+        }
+        return types;
+    }
+    
     @Override
     boolean isPreparedFor(int[] paramTypes) {
-        //TODO: update internal structures.
+        resizeTypes();
         return query.isPreparedFor(paramTypes) && isStatementParsed()  ;
     }
     

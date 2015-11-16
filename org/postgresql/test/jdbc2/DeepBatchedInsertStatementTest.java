@@ -78,7 +78,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
 
             assertEquals(3, batchedCount);
             int[] types = bqd.getStatementTypes();
-            assertEquals(4, types.length);
+            assertEquals(6, types.length);
             assertEquals(Oid.INT4, types[0]);
             assertEquals(Oid.INT4, types[1]);
             int[] outcome = pstmt.executeBatch();
