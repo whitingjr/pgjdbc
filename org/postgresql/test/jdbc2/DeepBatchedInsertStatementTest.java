@@ -337,7 +337,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
             
         } catch (SQLException sqle) {
-            fail ("Failed to execute two statements added to a batch. Reason:" +sqle.getMessage());
+            fail ("Failed to execute batch. Reason:" +sqle.getMessage());
         } catch (Exception e) {
             if (e.getCause() == null) {
                 fail (String.format("Exception thrown:[%1$s]", e.getMessage()));
@@ -348,6 +348,61 @@ public class DeepBatchedInsertStatementTest extends TestCase
             if (null != pstmt) {pstmt.close();}
             con.rollback();
         }
+    }
+    
+    /**
+     * Test to check the statement can provide the necessary number of 
+     * prepared type fields. This is after running with a batch size of 1.   
+     * @throws SQLException
+     */
+    public void testVaryingTypeCounts()
+        throws SQLException{
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testunspecified VALUES (?,?)");
+            pstmt.setInt(1, 1);
+            pstmt.setDate(2, new Date(1970, 01, 01));
+            pstmt.addBatch();
+            
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(1, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            
+            pstmt.setInt(1, 1);
+            pstmt.setDate(2, new Date(1970, 01, 01));
+            pstmt.addBatch();
+            pstmt.setInt(1, 2);
+            pstmt.setDate(2, new Date(1971, 01, 01));
+            pstmt.addBatch();
+            
+            pstmt.setInt(1, 3);
+            pstmt.setDate(2, new Date(1972, 01, 01));
+            pstmt.addBatch();
+            pstmt.setInt(1, 4);
+            pstmt.setDate(2, new Date(1973, 01, 01));
+            pstmt.addBatch();
+            
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(4, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
+            
+        } catch (SQLException sqle) {
+            fail ("Failed to execute statements added to a batch with varying batch counts. Reason:" +sqle.getMessage());
+        } catch (Exception e) {
+            if (e.getCause() == null) {
+                fail (String.format("Exception thrown:[%1$s]", e.getMessage()));
+            } else {
+                fail (String.format("Exception thrown:[%1$s] cause [%2$s]", e.getMessage(),e.getCause().getMessage()));
+            }
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }   
     }
     
     public DeepBatchedInsertStatementTest(String name) {

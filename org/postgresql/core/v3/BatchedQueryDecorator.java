@@ -183,10 +183,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
      * The original meta data may need updating.
      */
     @Override
-    public void setStatementTypes(int[] paramTypes) {
-        query.setStatementTypes(paramTypes);
-        if (isOriginalStale(paramTypes)) {
-            updateOriginal(paramTypes);
+    public void setStatementTypes(int[] types) {
+        query.setStatementTypes(types);
+        if (isOriginalStale(types)) {
+            updateOriginal(types);
         }
     }
     
@@ -194,7 +194,19 @@ public class BatchedQueryDecorator extends SimpleQuery {
     public int[] getStatementTypes() {
         int types[] = query.getStatementTypes();
         if (isOriginalStale(types)) {
+            /* Use opportunity to update originals if a ParameterDescribe has 
+             * been called. */
             updateOriginal(types);
+        }
+        // provide types depending on batch size, which may vary
+        int expected = getCurrentParameterCount()*getBatchSize();
+        
+        if (types != null && types.length < expected){
+            types = Arrays.copyOf(originalPreparedTypes, expected);
+            for (int row = 1; row < getBatchSize(); row += 1) {
+                System.arraycopy(originalPreparedTypes, 0, types, 
+                    row*originalPreparedTypes.length-1, originalPreparedTypes.length);
+            }
         }
         return types;
     }
@@ -284,7 +296,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     /**
      * Detect when the vanilla Field meta data is out of date. It
      * indicates since construction a ParameterDescription message has been 
-     * processed. This object needs updating.
+     * processed and the original needs replacing with detailed type information.
      * @param fields
      * @return
      */
@@ -344,13 +356,15 @@ public class BatchedQueryDecorator extends SimpleQuery {
         if (fields.length==0) {
             return;
         }
+        isFieldsSet = true;
         int maxPos = originalFields.length -1;
         for (int pos = 0; pos <= maxPos; pos+=1) {
-            if (originalFields[pos]==null && fields[pos] != null) {
-                originalFields[pos] = fields[pos];
-            }
-            if (pos==maxPos) {
-                isFieldsSet=true;
+            if (fields[pos] != null ) {
+                if (originalFields[pos]==null) {
+                    originalFields[pos] = fields[pos];
+                }
+            } else {
+                isFieldsSet = false;
             }
         }            
     }
@@ -362,10 +376,15 @@ public class BatchedQueryDecorator extends SimpleQuery {
         if (preparedTypes.length==0) {
             return;
         }
+        isPreparedTypesSet = true;
         int maxPos = originalPreparedTypes.length -1;
         for (int pos = 0; pos <= maxPos; pos++) {
-            if (preparedTypes[pos]!=UNSPECIFIED && originalPreparedTypes[pos]==UNSPECIFIED ) {
-                originalPreparedTypes[pos]=preparedTypes[pos];
+            if (preparedTypes[pos]!=UNSPECIFIED ) {
+                if ( originalPreparedTypes[pos]==UNSPECIFIED ){
+                    originalPreparedTypes[pos]=preparedTypes[pos];
+                }
+            } else {
+                isPreparedTypesSet = false;
             }
         }
     }
