@@ -31,7 +31,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private final Field[] originalFields;
     private boolean isFieldsSet;
     private int batchedQueryCount = 1;
-    private Integer isParsed = null;
+    private Integer isParsed = 0;
 
     private String batchedStatementName;
     private byte[] batchedEncodedName;

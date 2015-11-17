@@ -7,7 +7,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.Properties;
 
 import junit.framework.TestCase;
@@ -305,9 +304,10 @@ public class DeepBatchedInsertStatementTest extends TestCase
             BatchedQueryDecorator bqd = (BatchedQueryDecorator)fObject;
             int[] types = bqd.getStatementTypes();
             assertNotNull(types);
-            assertEquals(2, types.length);
             assertEquals(Oid.INT4, types[0]);
             assertEquals(Oid.UNSPECIFIED, types[1]);
+            assertEquals(Oid.INT4, types[2]);
+            assertEquals(Oid.UNSPECIFIED, types[3]);
             
             int[] outcome = pstmt.executeBatch();
             assertNotNull(outcome);
@@ -325,6 +325,8 @@ public class DeepBatchedInsertStatementTest extends TestCase
             types = bqd.getStatementTypes();
             assertEquals(Oid.INT4, types[0]);
             assertFalse(Oid.UNSPECIFIED == types[1]);
+            assertEquals(Oid.INT4, types[2]);
+            assertFalse(Oid.UNSPECIFIED == types[3]);
             outcome = pstmt.executeBatch();
             
             assertNotNull(outcome);
@@ -363,7 +365,7 @@ public class DeepBatchedInsertStatementTest extends TestCase
             int[] outcome = pstmt.executeBatch();
             assertNotNull(outcome);
             assertEquals(1, outcome.length);
-            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(1, outcome[0]);
             
             pstmt.setInt(1, 1);
             pstmt.setDate(2, new Date(1970, 01, 01));
