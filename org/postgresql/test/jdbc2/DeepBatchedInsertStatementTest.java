@@ -44,7 +44,6 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertTrue(pstmt instanceof AbstractJdbc2Statement);
             AbstractJdbc2Statement s = (AbstractJdbc2Statement)pstmt;
             
-            // hackers delight
             Field f = AbstractJdbc2Statement.class.getDeclaredField("preparedQuery");
             assertNotNull(f);
             f.setAccessible(true);

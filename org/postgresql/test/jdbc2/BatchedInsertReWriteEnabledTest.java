@@ -101,7 +101,10 @@ public class BatchedInsertReWriteEnabledTest extends TestCase{
             }
         }
     }
-    
+    /**
+     * Test to make sure a statement with a semicolon is not broken
+     * @throws SQLException
+     */
     public void testBatchWithReWrittenBatchStatementWithSemiColon() throws SQLException {
         PreparedStatement pstmt = null;
         try {
@@ -128,6 +131,48 @@ public class BatchedInsertReWriteEnabledTest extends TestCase{
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
         } catch (SQLException sqle) {
             fail ("Failed to execute three statements added to a batch. Reason:" +sqle.getMessage());
+        } finally {
+            if (null != pstmt) {pstmt.close();}
+            con.rollback();
+        }
+    }
+    
+    /**
+     * Test case to check the outcome for a batch with a single row/batch is consistent
+     * across calls to executeBatch.
+     */
+    public void testConsistentOutcome() 
+        throws SQLException {
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?);");
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            int[] outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(1, outcome.length);
+            assertEquals(1, outcome[0]);
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            pstmt.setInt(1, 3);
+            pstmt.setInt(2, 4);
+            pstmt.addBatch();
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(2, outcome.length);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[0]);
+            assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
+            pstmt.setInt(1, 1);
+            pstmt.setInt(2, 2);
+            pstmt.addBatch();
+            outcome = pstmt.executeBatch();
+            assertNotNull(outcome);
+            assertEquals(1, outcome.length);
+            assertEquals(1, outcome[0]);
+        } catch (SQLException sqle) {
+            fail ("Consistent batch outcome test failed. Reason:" +sqle.getMessage());
         } finally {
             if (null != pstmt) {pstmt.close();}
             con.rollback();

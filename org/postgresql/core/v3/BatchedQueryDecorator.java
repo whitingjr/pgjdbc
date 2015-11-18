@@ -306,6 +306,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     void setStatementName(String statementName) {
         if (statementName == null) {
             batchedStatementName = null;
+            batchedEncodedName = null;
         } else {
             query.setStatementName(statementName);
         }
