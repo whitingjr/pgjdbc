@@ -67,6 +67,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
             if (query.getFields() != null && query.getFields().length > 0) {
                 System.arraycopy(query.getFields(), 0, originalFields, 0, paramCount);
             }
+            query.setStatementName(null);
         } else { // unsupported type of Query 
             originalFragments = new String[0];
             originalPreparedTypes = new int[0];
@@ -100,7 +101,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
         query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
         setStatementName(null);
-        batchedEncodedName = null;
         assert query.getStatementTypes().length == initializedTypes.length;
     }
     

@@ -138,8 +138,13 @@ class SimpleQuery implements V3Query {
     }
 
     void setStatementName(String statementName) {
-        this.statementName = statementName;
-        this.encodedStatementName = Utils.encodeUTF8(statementName);
+        if (statementName == null) {
+            this.statementName = null;
+            this.encodedStatementName = null;
+        } else {
+            this.statementName = statementName;
+            this.encodedStatementName = Utils.encodeUTF8(statementName);
+        }
     }
 
     void setStatementTypes(int[] paramTypes) {

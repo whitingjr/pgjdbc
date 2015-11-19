@@ -135,6 +135,15 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertNotNull(obsn);
             assertTrue(obsn instanceof String);
             String bsn = (String)obsn;
+            assertEquals("S_2", bsn);
+            Method mgESN = BatchedQueryDecorator.class.getDeclaredMethod("getEncodedStatementName", new Class[]{});
+            mgESN.setAccessible(true);
+            assertNotNull(mgESN);
+            Object obesn = mgESN.invoke(bqd, new Object[]{});
+            assertNotNull(obesn);
+            assertTrue(obsn instanceof String);
+            String besn = (String)obesn;
+            assertEquals("S_2".getBytes(), besn);
             
             outcome = pstmt.executeBatch();
             assertNotNull(outcome);
@@ -147,6 +156,10 @@ public class DeepBatchedInsertStatementTest extends TestCase
             fBSN.setAccessible(true);
             assertNotNull(fBSN);
             assertEquals(null, fBSN.get(bqd));
+            Field fEBSN = BatchedQueryDecorator.class.getDeclaredField("batchedEncodedName");
+            fEBSN.setAccessible(true);
+            assertNotNull(fEBSN);
+            assertEquals(null, fEBSN.get(bqd));
             
             assertEquals(1, bqd.getBatchSize());
             assertNotNull(bqd.getStatementTypes());
