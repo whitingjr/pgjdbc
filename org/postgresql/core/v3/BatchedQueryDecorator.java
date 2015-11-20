@@ -33,7 +33,6 @@ public class BatchedQueryDecorator extends SimpleQuery {
     private int batchedQueryCount = 1;
     private Integer isParsed = 0;
 
-    private String batchedStatementName;
     private byte[] batchedEncodedName;
     
     /**
@@ -100,7 +99,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         }
         query.reset(originalFragments, initializedTypes, initializedFields);
         query.resetBatchedCount();
-        setStatementName(null);
+//        setStatementName(null);
         assert query.getStatementTypes().length == initializedTypes.length;
     }
     
@@ -231,14 +230,14 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     boolean isPreparedFor(int[] paramTypes) {
         resizeTypes();
-        return query.isPreparedFor(paramTypes) && isStatementParsed()  ;
+        return isStatementParsed() && query.isPreparedFor(paramTypes) ;
     }
     
     @Override
     boolean hasUnresolvedTypes() {
         return query.hasUnresolvedTypes();
     }
-    
+
     @Override
     byte[] getEncodedStatementName() {
         if (batchedEncodedName==null) {
@@ -256,7 +255,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     public void setFields(Field[] fields) {
         query.setFields(fields);
-        // changed during Describe or reWrite.
+        // changed during Describe.
         if (isOriginalStale(fields)) {
             updateOriginal(fields);
         }
@@ -305,8 +304,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
     @Override
     void setStatementName(String statementName) {
         if (statementName == null) {
-            batchedStatementName = null;
             batchedEncodedName = null;
+            query.setStatementName(null);
         } else {
             query.setStatementName(statementName);
         }

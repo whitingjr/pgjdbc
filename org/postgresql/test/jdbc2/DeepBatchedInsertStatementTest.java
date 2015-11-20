@@ -128,22 +128,22 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(7, bqd.getFragments().length);
             assertEquals(6, bqd.getStatementTypes().length);
             
-            Method mgSN = BatchedQueryDecorator.class.getDeclaredMethod("getStatementName", new Class[]{});
-            mgSN.setAccessible(true);
-            assertNotNull(mgSN);
-            Object obsn = mgSN.invoke(bqd, new Object[]{});
-            assertNotNull(obsn);
-            assertTrue(obsn instanceof String);
-            String bsn = (String)obsn;
-            assertEquals("S_2", bsn);
-            Method mgESN = BatchedQueryDecorator.class.getDeclaredMethod("getEncodedStatementName", new Class[]{});
-            mgESN.setAccessible(true);
-            assertNotNull(mgESN);
-            Object obesn = mgESN.invoke(bqd, new Object[]{});
-            assertNotNull(obesn);
-            assertTrue(obsn instanceof String);
-            String besn = (String)obesn;
-            assertEquals("S_2".getBytes(), besn);
+//            Method mgSN = BatchedQueryDecorator.class.getDeclaredMethod("getStatementName", new Class[]{});
+//            mgSN.setAccessible(true);
+//            assertNotNull(mgSN);
+//            Object obsn = mgSN.invoke(bqd, new Object[]{});
+//            assertNotNull(obsn);
+//            assertTrue(obsn instanceof String);
+//            String bsn = (String)obsn;
+//            assertEquals("S_2", bsn);
+//            Method mgESN = BatchedQueryDecorator.class.getDeclaredMethod("getEncodedStatementName", new Class[]{});
+//            mgESN.setAccessible(true);
+//            assertNotNull(mgESN);
+//            Object obesn = mgESN.invoke(bqd, new Object[]{});
+//            assertNotNull(obesn);
+//            assertTrue(obesn instanceof byte[]);
+//            byte[] besn = (byte[])obesn;
+//            assertEquals("S_2", new String(besn));
             
             outcome = pstmt.executeBatch();
             assertNotNull(outcome);
@@ -152,10 +152,6 @@ public class DeepBatchedInsertStatementTest extends TestCase
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             
-            Field fBSN = BatchedQueryDecorator.class.getDeclaredField("batchedStatementName");
-            fBSN.setAccessible(true);
-            assertNotNull(fBSN);
-            assertEquals(null, fBSN.get(bqd));
             Field fEBSN = BatchedQueryDecorator.class.getDeclaredField("batchedEncodedName");
             fEBSN.setAccessible(true);
             assertNotNull(fEBSN);

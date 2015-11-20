@@ -12,6 +12,7 @@ import org.postgresql.PGProperty;
 import org.postgresql.core.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Properties;
@@ -1294,6 +1295,8 @@ public class QueryExecutorImpl implements QueryExecutor {
         byte[] encodedStatementName = query.getEncodedStatementName();
         String[] fragments = query.getFragments();
 
+        assert Arrays.equals(encodedStatementName, Utils.encodeUTF8(statementName));
+        
         if (logger.logDebug())
         {
             StringBuilder sbuf = new StringBuilder(" FE=> Parse(stmt=" + query.getStatementName() + ",query=\"");
@@ -1315,6 +1318,14 @@ public class QueryExecutorImpl implements QueryExecutor {
                 sbuf.append(params.getTypeOID(i));
             }
             sbuf.append("})");
+            if (encodedStatementName != null ) {
+                sbuf.append(" encoded sn [");
+                for (byte b: encodedStatementName) {
+                    sbuf.append(Byte.toString(b));    
+                }
+                sbuf.append("] ");
+            }
+            
             logger.debug(sbuf.toString());
         }
 
