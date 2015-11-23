@@ -192,7 +192,12 @@ public class BatchedInsertStatementPreparingTest extends TestCase {
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[4]);
         } catch (SQLException sqle) {
-            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
+            StringBuilder m = new StringBuilder();
+            m.append(sqle.getMessage());
+            if (sqle.getCause() != null){
+                m.append(sqle.getCause().getMessage());
+            }
+            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +m.toString());
         } finally {
             if (null != pstmt) {pstmt.close();}
             con.rollback();

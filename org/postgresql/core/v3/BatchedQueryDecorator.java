@@ -308,6 +308,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
             query.setStatementName(null);
         } else {
             query.setStatementName(statementName);
+            batchedEncodedName = Utils.encodeUTF8(statementName);
         }
     }
     

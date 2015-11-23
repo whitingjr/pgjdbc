@@ -7,6 +7,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Properties;
 
 import junit.framework.TestCase;
@@ -155,7 +156,10 @@ public class DeepBatchedInsertStatementTest extends TestCase
             Field fEBSN = BatchedQueryDecorator.class.getDeclaredField("batchedEncodedName");
             fEBSN.setAccessible(true);
             assertNotNull(fEBSN);
-            assertEquals(null, fEBSN.get(bqd));
+            Object ofEBSN = fEBSN.get(bqd);
+            assertTrue(ofEBSN instanceof byte[]);
+            byte[] ebsn = (byte[])ofEBSN;
+            assertTrue(Arrays.equals("S_2".getBytes(), ebsn));
             
             assertEquals(1, bqd.getBatchSize());
             assertNotNull(bqd.getStatementTypes());

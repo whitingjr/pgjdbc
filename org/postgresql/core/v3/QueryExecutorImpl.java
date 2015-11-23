@@ -1295,8 +1295,6 @@ public class QueryExecutorImpl implements QueryExecutor {
         byte[] encodedStatementName = query.getEncodedStatementName();
         String[] fragments = query.getFragments();
 
-        assert Arrays.equals(encodedStatementName, Utils.encodeUTF8(statementName));
-        
         if (logger.logDebug())
         {
             StringBuilder sbuf = new StringBuilder(" FE=> Parse(stmt=" + query.getStatementName() + ",query=\"");

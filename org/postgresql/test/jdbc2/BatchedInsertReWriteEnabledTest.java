@@ -94,7 +94,12 @@ public class BatchedInsertReWriteEnabledTest extends TestCase{
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[2]);
             assertEquals(Statement.SUCCESS_NO_INFO, outcome[3]);
         } catch (SQLException sqle) {
-            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +sqle.getMessage());
+            StringBuilder m = new StringBuilder();
+            m.append(sqle.getMessage());
+            if (sqle.getCause() != null){
+                m.append(sqle.getCause().getMessage());
+            }
+            fail ("Failed to execute four statements added to a re used Prepared Statement. Reason:" +m.toString());
         } finally {
             if (null != pstmt) {
                 pstmt.close();
@@ -172,7 +177,12 @@ public class BatchedInsertReWriteEnabledTest extends TestCase{
             assertEquals(1, outcome.length);
             assertEquals(1, outcome[0]);
         } catch (SQLException sqle) {
-            fail ("Consistent batch outcome test failed. Reason:" +sqle.getMessage());
+            StringBuilder m = new StringBuilder();
+            m.append(sqle.getMessage());
+            if (sqle.getCause() != null){
+                m.append(sqle.getCause().getMessage());
+            }
+            fail ("Consistent batch outcome test failed. Reason:" +m.toString());
         } finally {
             if (null != pstmt) {pstmt.close();}
             con.rollback();
