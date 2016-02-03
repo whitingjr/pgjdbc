@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Parameter list for query parameters in the V2 protocol.
@@ -30,7 +31,8 @@ import java.util.Arrays;
  */
 class SimpleParameterList implements ParameterList {
   SimpleParameterList(int paramCount, boolean useEStringSyntax) {
-    this.paramValues = new Object[paramCount];
+    this.paramValues = new ArrayList<Object>(paramCount);
+    fill(paramCount);
     this.useEStringSyntax = useEStringSyntax;
   }
 
@@ -45,18 +47,18 @@ class SimpleParameterList implements ParameterList {
   ;
 
   public int getInParameterCount() {
-    return paramValues.length;
+    return paramValues.size();
   }
 
   public int getParameterCount() {
-    return paramValues.length;
+    return paramValues.size();
   }
 
   public int getOutParameterCount() {
     return 1;
   }
 
-  public int[] getTypeOIDs() {
+  public List<Integer> getTypeOIDs() {
     return null;
   }
 
@@ -65,14 +67,14 @@ class SimpleParameterList implements ParameterList {
   }
 
   public void setLiteralParameter(int index, String value, int oid) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = value;
+    paramValues.set(index - 1, value);
   }
 
   public void setStringParameter(int index, String value, int oid) throws SQLException {
@@ -89,60 +91,60 @@ class SimpleParameterList implements ParameterList {
   }
 
   public void setBytea(int index, byte[] data, int offset, int length) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = new StreamWrapper(data, offset, length);
+    paramValues.set(index - 1, new StreamWrapper(data, offset, length));
   }
 
   public void setBytea(int index, final InputStream stream, final int length) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = new StreamWrapper(stream, length);
+    paramValues.set(index - 1, new StreamWrapper(stream, length));
   }
 
   public void setBytea(int index, InputStream stream) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = new StreamWrapper(stream);
+    paramValues.set(index - 1, new StreamWrapper(stream));
   }
 
   public void setNull(int index, int oid) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = NULL_OBJECT;
+    paramValues.set(index - 1, NULL_OBJECT);
   }
 
   public String toString(int index) {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new IllegalArgumentException("Parameter index " + index + " out of range");
     }
 
-    if (paramValues[index - 1] == null) {
+    if (paramValues.get(index - 1) == null) {
       return "?";
-    } else if (paramValues[index - 1] == NULL_OBJECT) {
+    } else if (paramValues.get(index - 1) == NULL_OBJECT) {
       return "NULL";
     } else {
-      return paramValues[index - 1].toString();
+      return paramValues.get(index - 1).toString();
     }
   }
 
@@ -178,16 +180,16 @@ class SimpleParameterList implements ParameterList {
 
 
   void writeV2Value(int index, Writer encodingWriter) throws IOException {
-    if (paramValues[index - 1] instanceof StreamWrapper) {
-      streamBytea((StreamWrapper) paramValues[index - 1], encodingWriter);
+    if (paramValues.get(index - 1) instanceof StreamWrapper) {
+      streamBytea((StreamWrapper) paramValues.get(index - 1), encodingWriter);
     } else {
-      encodingWriter.write((String) paramValues[index - 1]);
+      encodingWriter.write((String) paramValues.get(index - 1));
     }
   }
 
   void checkAllParametersSet() throws SQLException {
-    for (int i = 0; i < paramValues.length; i++) {
-      if (paramValues[i] == null) {
+    for (int i = 0; i < paramValues.size(); i++) {
+      if (paramValues.get(i) == null) {
         throw new PSQLException(GT.tr("No value specified for parameter {0}.", i + 1),
             PSQLState.INVALID_PARAMETER_VALUE);
       }
@@ -195,13 +197,13 @@ class SimpleParameterList implements ParameterList {
   }
 
   public ParameterList copy() {
-    SimpleParameterList newCopy = new SimpleParameterList(paramValues.length, useEStringSyntax);
-    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.length);
+    SimpleParameterList newCopy = new SimpleParameterList(paramValues.size(), useEStringSyntax);
+    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.size());
     return newCopy;
   }
 
   public void clear() {
-    Arrays.fill(paramValues, null);
+    paramValues.clear();
   }
 
   public void setBinaryParameter(int index, byte[] value, int oid) {
@@ -209,44 +211,45 @@ class SimpleParameterList implements ParameterList {
   }
 
   @Override
-  public Object[] getValues() {
+  public List<Object> getValues() {
     return paramValues;
   }
 
   @Override
-  /**
-   * Replace all parameters with new values in provided list.
-   */
-  public void addAll(ParameterList list) {
-    if (list instanceof SimpleParameterList ) {
-      /* only v2.SimpleParameterList is compatible with this type. The list
-      of parameters is expected to already be cloned from the values
-      passed by application. */
+  public void replace(ParameterList list) {
+    if (list instanceof org.postgresql.core.v2.SimpleParameterList ) {
+      /* only v3.SimpleParameterList is compatible with this type
+      we need to create copies of our parameters, otherwise the values can be changed */
+      clear();
       SimpleParameterList spl = (SimpleParameterList) list;
-      Arrays.fill(paramValues, null);
-      System.arraycopy(spl.getValues(), 0, paramValues, 0,
-          spl.getInParameterCount());
+      paramValues.addAll(spl.getValues());
     }
+  }
+
+  @Override
+  public void shrink(int size) {
+    // no-op, unsupported
   }
 
   @Override
   /**
    * Append parameters to the list.
    */
-  public void appendAll(ParameterList list) {
-    if (list instanceof SimpleParameterList ) {
-      /* only v2.SimpleParameterList is compatible with this type. The list
-      of parameters is expected to already be cloned from the values
-      passed by application. */
-      SimpleParameterList spl = (SimpleParameterList) list;
-      int count = spl.getInParameterCount();
-      System.arraycopy(spl.getValues(), 0, paramValues,
-          getInParameterCount() - count,
-          count);
+  public void addAll(ParameterList list) {
+    paramValues.addAll(list.getValues());
+  }
+
+  public void fill(int size) {
+    if (size <= paramValues.size()) {
+      return;
+    }
+    int n = size - paramValues.size();
+    for (int i = 0; i < n; i += 1) {
+      paramValues.add(null);
     }
   }
 
-  private final Object[] paramValues;
+  private final List<Object> paramValues;
 
   private final boolean useEStringSyntax;
 

@@ -22,7 +22,8 @@ import org.postgresql.util.StreamWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -40,56 +41,62 @@ class SimpleParameterList implements V3ParameterList {
   private final static byte BINARY = 4;
 
   SimpleParameterList(int paramCount, ProtocolConnectionImpl protoConnection) {
-    this.paramValues = new Object[paramCount];
-    this.paramTypes = new int[paramCount];
-    this.encoded = new byte[paramCount][];
-    this.flags = new byte[paramCount];
+    this.paramValues = new ArrayList<Object>(paramCount);
+    this.paramTypes = new ArrayList<Integer>(paramCount);
+    this.flags = new ArrayList<Byte>(paramCount);
+    this.encoded = new ArrayList<byte[]>(paramCount);
+    fill(paramCount);
+    this.protoConnection = protoConnection;
+  }
+
+  SimpleParameterList(List<Object> values, List<Integer> types, List<Byte>
+      flags, List<byte[]> encoded, ProtocolConnectionImpl protoConnection) {
+    this.paramValues = new ArrayList<Object>(values.size());
+    this.paramValues.addAll(values);
+    this.paramTypes = new ArrayList<Integer>(types.size());
+    this.paramTypes.addAll(types);
+    this.flags = new ArrayList<Byte>(flags.size());
+    this.flags.addAll(flags);
+    this.encoded = new ArrayList<byte[]>(encoded.size());
+    this.encoded.addAll(encoded);
     this.protoConnection = protoConnection;
   }
 
   public void registerOutParameter(int index, int sqlType) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
-      throw new PSQLException(
-          GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
-          PSQLState.INVALID_PARAMETER_VALUE);
-    }
+    fill(index);
 
-    flags[index - 1] |= OUT;
+    byte b = flags.get(index - 1);
+    flags.set(index - 1, b |= OUT);
   }
 
   private void bind(int index, Object value, int oid, byte binary) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
-      throw new PSQLException(
-          GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
-          PSQLState.INVALID_PARAMETER_VALUE);
-    }
+    fill(index);
 
     --index;
 
-    encoded[index] = null;
-    paramValues[index] = value;
-    flags[index] = (byte) (direction(index) | IN | binary);
+    encoded.set(index, null);
+    paramValues.set(index, value);
+    flags.set(index, (byte) (direction(index) | IN | binary));
 
     // If we are setting something to an UNSPECIFIED NULL, don't overwrite
     // our existing type for it. We don't need the correct type info to
     // send this value, and we don't want to overwrite and require a
     // reparse.
-    if (oid == Oid.UNSPECIFIED && paramTypes[index] != Oid.UNSPECIFIED && value == NULL_OBJECT) {
+    if (oid == Oid.UNSPECIFIED && paramTypes.get(index) != Oid.UNSPECIFIED && value == NULL_OBJECT) {
       return;
     }
 
-    paramTypes[index] = oid;
+    paramTypes.set(index, oid);
   }
 
   public int getParameterCount() {
-    return paramValues.length;
+    return paramValues.size();
   }
 
   public int getOutParameterCount() {
     int count = 0;
-    for (int i = 0; i < paramTypes.length; i++) {
+    int size = paramTypes.size();
+    for (int i = 0; i < size; i++) {
       if ((direction(i) & OUT) == OUT) {
         count++;
       }
@@ -104,7 +111,8 @@ class SimpleParameterList implements V3ParameterList {
 
   public int getInParameterCount() {
     int count = 0;
-    for (int i = 0; i < paramTypes.length; i++) {
+    int size = paramTypes.size();
+    for (int i = 0; i < size; i++) {
       if (direction(i) != OUT) {
         count++;
       }
@@ -153,38 +161,41 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public String toString(int index) {
+    if (paramValues.size() < index) {
+      fill(index);
+    }
     --index;
-    if (paramValues[index] == null) {
+    if (paramValues.get(index) == null) {
       return "?";
-    } else if (paramValues[index] == NULL_OBJECT) {
+    } else if (paramValues.get(index) == NULL_OBJECT) {
       return "NULL";
-    } else if ((flags[index] & BINARY) == BINARY) {
+    } else if ((flags.get(index) & BINARY) == BINARY) {
       // handle some of the numeric types
 
-      switch (paramTypes[index]) {
+      switch (paramTypes.get(index)) {
         case Oid.INT2:
-          short s = ByteConverter.int2((byte[]) paramValues[index], 0);
+          short s = ByteConverter.int2((byte[]) paramValues.get(index), 0);
           return Short.toString(s);
 
         case Oid.INT4:
-          int i = ByteConverter.int4((byte[]) paramValues[index], 0);
+          int i = ByteConverter.int4((byte[]) paramValues.get(index), 0);
           return Integer.toString(i);
 
         case Oid.INT8:
-          long l = ByteConverter.int8((byte[]) paramValues[index], 0);
+          long l = ByteConverter.int8((byte[]) paramValues.get(index), 0);
           return Long.toString(l);
 
         case Oid.FLOAT4:
-          float f = ByteConverter.float4((byte[]) paramValues[index], 0);
+          float f = ByteConverter.float4((byte[]) paramValues.get(index), 0);
           return Float.toString(f);
 
         case Oid.FLOAT8:
-          double d = ByteConverter.float8((byte[]) paramValues[index], 0);
+          double d = ByteConverter.float8((byte[]) paramValues.get(index), 0);
           return Double.toString(d);
       }
       return "?";
     } else {
-      String param = paramValues[index].toString();
+      String param = paramValues.get(index).toString();
       boolean hasBackslash = param.indexOf('\\') != -1;
 
       // add room for quotes + potential escaping.
@@ -220,8 +231,9 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public void checkAllParametersSet() throws SQLException {
-    for (int i = 0; i < paramTypes.length; ++i) {
-      if (direction(i) != OUT && paramValues[i] == null) {
+    int size = paramTypes.size();
+    for (int i = 0; i < size; ++i) {
+      if (direction(i) != OUT && paramValues.get(i) == null) {
         throw new PSQLException(GT.tr("No value specified for parameter {0}.", i + 1),
             PSQLState.INVALID_PARAMETER_VALUE);
       }
@@ -229,10 +241,11 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public void convertFunctionOutParameters() {
-    for (int i = 0; i < paramTypes.length; ++i) {
+    int size = paramTypes.size();
+    for (int i = 0; i < size; ++i) {
       if (direction(i) == OUT) {
-        paramTypes[i] = Oid.VOID;
-        paramValues[i] = "null";
+        paramTypes.set(i, Oid.VOID);
+        paramValues.set(i, "null");
       }
     }
   }
@@ -251,7 +264,7 @@ class SimpleParameterList implements V3ParameterList {
     pgStream.SendStream(wrapper.getStream(), wrapper.getLength());
   }
 
-  public int[] getTypeOIDs() {
+  public List<Integer> getTypeOIDs() {
     return paramTypes;
   }
 
@@ -260,7 +273,7 @@ class SimpleParameterList implements V3ParameterList {
   //
 
   int getTypeOID(int index) {
-    return paramTypes[index - 1];
+    return paramTypes.get(index - 1);
   }
 
   boolean hasUnresolvedTypes() {
@@ -274,151 +287,186 @@ class SimpleParameterList implements V3ParameterList {
 
   void setResolvedType(int index, int oid) {
     // only allow overwriting an unknown value
-    if (paramTypes[index - 1] == Oid.UNSPECIFIED) {
-      paramTypes[index - 1] = oid;
-    } else if (paramTypes[index - 1] != oid) {
+    if (paramTypes.get(index - 1) == Oid.UNSPECIFIED) {
+      paramTypes.set(index - 1, oid);
+    } else if (paramTypes.get(index - 1) != oid) {
       throw new IllegalArgumentException("Can't change resolved type for param: " + index + " from "
-          + paramTypes[index - 1] + " to " + oid);
+          + paramTypes.get(index - 1) + " to " + oid);
     }
   }
 
   boolean isNull(int index) {
-    return (paramValues[index - 1] == NULL_OBJECT);
+    return (paramValues.get(index - 1) == NULL_OBJECT);
   }
 
   boolean isBinary(int index) {
-    return (flags[index - 1] & BINARY) != 0;
+    return (flags.get(index - 1) & BINARY) != 0;
   }
 
   private byte direction(int index) {
-    return (byte) (flags[index] & INOUT);
+    return (byte) (flags.get(index) & INOUT);
   }
 
   int getV3Length(int index) {
     --index;
 
     // Null?
-    if (paramValues[index] == NULL_OBJECT) {
+    if (paramValues.get(index) == NULL_OBJECT) {
       throw new IllegalArgumentException("can't getV3Length() on a null parameter");
     }
 
     // Directly encoded?
-    if (paramValues[index] instanceof byte[]) {
-      return ((byte[]) paramValues[index]).length;
+    if (paramValues.get(index) instanceof byte[]) {
+      return ((byte[]) paramValues.get(index) ).length;
     }
 
     // Binary-format bytea?
-    if (paramValues[index] instanceof StreamWrapper) {
-      return ((StreamWrapper) paramValues[index]).getLength();
+    if (paramValues.get(index) instanceof StreamWrapper) {
+      return ((StreamWrapper) paramValues.get(index)).getLength();
     }
 
     // Already encoded?
-    if (encoded[index] == null) {
+    if (encoded.get(index) == null) {
       // Encode value and compute actual length using UTF-8.
-      encoded[index] = Utils.encodeUTF8(paramValues[index].toString());
+      encoded.set(index, Utils.encodeUTF8(paramValues.get(index).toString()));
     }
 
-    return encoded[index].length;
+    return encoded.get(index).length;
   }
 
   void writeV3Value(int index, PGStream pgStream) throws IOException {
     --index;
 
     // Null?
-    if (paramValues[index] == NULL_OBJECT) {
+    if (paramValues.get(index) == NULL_OBJECT) {
       throw new IllegalArgumentException("can't writeV3Value() on a null parameter");
     }
 
     // Directly encoded?
-    if (paramValues[index] instanceof byte[]) {
-      pgStream.Send((byte[]) paramValues[index]);
+    if (paramValues.get(index) instanceof byte[]) {
+      pgStream.Send((byte[]) paramValues.get(index));
       return;
     }
 
     // Binary-format bytea?
-    if (paramValues[index] instanceof StreamWrapper) {
-      streamBytea(pgStream, (StreamWrapper) paramValues[index]);
+    if (paramValues.get(index) instanceof StreamWrapper) {
+      streamBytea(pgStream, (StreamWrapper) paramValues.get(index));
       return;
     }
 
     // Encoded string.
-    if (encoded[index] == null) {
-      encoded[index] = Utils.encodeUTF8((String) paramValues[index]);
+    if (encoded.get(index) == null) {
+      encoded.set(index, Utils.encodeUTF8((String) paramValues.get(index)));
     }
-    pgStream.Send(encoded[index]);
+    pgStream.Send(encoded.get(index));
   }
 
-
   public ParameterList copy() {
-    SimpleParameterList newCopy = new SimpleParameterList(paramValues.length, protoConnection);
-    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.length);
-    System.arraycopy(paramTypes, 0, newCopy.paramTypes, 0, paramTypes.length);
-    System.arraycopy(flags, 0, newCopy.flags, 0, flags.length);
-    return newCopy;
+    return new SimpleParameterList(paramValues, paramTypes, flags, encoded, protoConnection);
   }
 
   public void clear() {
-    Arrays.fill(paramValues, null);
-    Arrays.fill(paramTypes, 0);
-    Arrays.fill(encoded, null);
-    Arrays.fill(flags, (byte) 0);
+    int size = paramValues.size();
+    /* See BatchExecuteTest, the existing parameters are kept.*/
+    paramValues.clear();
+    paramTypes.clear();
+    encoded.clear();
+    flags.clear();
+    fill(size);
   }
 
   public SimpleParameterList[] getSubparams() {
     return null;
   }
 
-  @Override
-  public Object[] getValues() {
+  public List<Object> getValues() {
     return paramValues;
   }
 
   @Override
-  public int[] getParamTypes() {
+  public List<Integer> getParamTypes() {
     return paramTypes;
   }
 
   @Override
-  public byte[] getFlags() {
+  public List<Byte> getFlags() {
     return flags;
   }
 
   @Override
-  public byte[][] getEncoding() {
+  public List<byte[]> getEncoding() {
     return encoded;
+  }
+
+  @Override
+  public void replace(ParameterList list) {
+    if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
+      /* only v3.SimpleParameterList is compatible with this type
+      we need to create copies of our parameters, otherwise the values can be changed */
+      clear();
+      SimpleParameterList spl = (SimpleParameterList) list;
+      paramValues.addAll(spl.getValues());
+      paramTypes.addAll(spl.getParamTypes());
+      flags.addAll(spl.getFlags());
+      encoded.addAll(spl.getEncoding());
+    }
   }
 
   @Override
   public void addAll(ParameterList list) {
     if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
       /* only v3.SimpleParameterList is compatible with this type
-      we need to create copies of our parameters, otherwise the values can be changed */
-      SimpleParameterList spl = (SimpleParameterList) list.copy();
-      System.arraycopy(spl.getValues(), 0, this.paramValues, 0, spl.getInParameterCount());
-      System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, 0, spl.getInParameterCount());
-      System.arraycopy(spl.getFlags(), 0, this.flags, 0, spl.getInParameterCount());
-      System.arraycopy(spl.getEncoding(), 0, this.encoded, 0, spl.getInParameterCount());
+      Backing collections have been sized based on parameter count. */
+      SimpleParameterList spl = (SimpleParameterList) list;
+      paramValues.addAll(spl.getValues());
+      paramTypes.addAll(spl.getParamTypes());
+      flags.addAll(spl.getFlags());
+      encoded.addAll(spl.getEncoding());
+    }
+  }
+
+  /** Add elements to collections to preserve behaviour of array use. Avoids 
+   * NPE or ArrayIndexOutOfBoundsException.
+   * 
+   * @param size number of parameters
+   */
+  public void fill(int size) {
+    if (size <= paramTypes.size()) { // shrink
+      return;
+    }
+    int n = size - paramTypes.size();
+    for (int i = 0; i < n; i += 1) {
+      paramValues.add(null);
+      paramTypes.add(Oid.UNSPECIFIED);
+      flags.add((byte)0);
+      encoded.add(null);
     }
   }
 
   @Override
-  public void appendAll(ParameterList list) {
-    if (list instanceof org.postgresql.core.v3.SimpleParameterList ) {
-      /* only v3.SimpleParameterList is compatible with this type
-      we need to create copies of our parameters, otherwise the values can be changed */
-      SimpleParameterList spl = (SimpleParameterList) list.copy();
-      int start = this.paramValues.length - spl.getInParameterCount();
-      System.arraycopy(spl.getValues(), 0, this.paramValues, start, spl.getInParameterCount());
-      System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, start, spl.getInParameterCount());
-      System.arraycopy(spl.getFlags(), 0, this.flags, start, spl.getInParameterCount());
-      System.arraycopy(spl.getEncoding(), 0, this.encoded, start, spl.getInParameterCount());
+  public void shrink(int size) {
+    int n = paramValues.size() - size;
+    for (int i = 0; i < n ; i+= 1) {
+      paramValues.remove(paramValues.size()-1);
+    }
+    n = paramTypes.size() - size;
+    for (int i = 0; i < n; i += 1 ) {
+      paramTypes.remove(paramTypes.size() - 1);
+    }
+    n = flags.size() - size;
+    for (int i = 0; i < n; i += 1) {
+      flags.remove(flags.size() - 1);
+    }
+    n = encoded.size() - size;
+    for (int i = 0; i < n ; i += 1) {
+      encoded.remove(encoded.size() - 1);
     }
   }
 
-  private final Object[] paramValues;
-  private final int[] paramTypes;
-  private final byte[] flags;
-  private final byte[][] encoded;
+  private final List<Object> paramValues;
+  private final List<Integer> paramTypes;
+  private final List<Byte> flags;
+  private final List<byte[]> encoded;
   private final ProtocolConnectionImpl protoConnection;
 
   /**

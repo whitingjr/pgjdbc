@@ -11,9 +11,11 @@ package org.postgresql.core.v3;
 import static org.postgresql.core.Oid.UNSPECIFIED;
 
 import org.postgresql.core.NativeQuery;
+import org.postgresql.core.Oid;
 import org.postgresql.core.Utils;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -27,7 +29,7 @@ import java.util.Arrays;
  */
 public class BatchedQueryDecorator extends SimpleQuery {
 
-  private final int[] originalPreparedTypes;
+  private final List<Integer> originalPreparedTypes;
   private boolean isPreparedTypesSet;
   private Integer isParsed = 0;
 
@@ -38,12 +40,16 @@ public class BatchedQueryDecorator extends SimpleQuery {
     super(query, protoConnection);
     int paramCount = getBindPositions();
 
-    originalPreparedTypes = new int[paramCount];
-    if (getStatementTypes() != null && getStatementTypes().length > 0) {
-      System.arraycopy(getStatementTypes(), 0, originalPreparedTypes, 0,
-          paramCount);
+    originalPreparedTypes = new ArrayList<Integer>();
+    List<Integer> types = getStatementTypes();
+    if (types != null && !types.isEmpty()) {
+      for ( Integer i : types ) {
+        originalPreparedTypes.add(i);
+      }
     } else {
-      Arrays.fill(originalPreparedTypes, UNSPECIFIED);
+      for ( int i = 1 ; i <= paramCount ; i += 1 ) {
+        originalPreparedTypes.add(UNSPECIFIED);
+      }
     }
 
     setStatementName(null);
@@ -66,7 +72,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
    * The original meta data may need updating.
    */
   @Override
-  public void setStatementTypes(int[] types) {
+  public void setStatementTypes(List<Integer> types) {
     super.setStatementTypes(types);
     if (isOriginalStale(types)) {
       updateOriginal(types);
@@ -79,8 +85,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
    * @return int an array of {@link org.postgresql.core.Oid} parameter types
    */
   @Override
-  public int[] getStatementTypes() {
-    int types[] = super.getStatementTypes();
+  public List<Integer> getStatementTypes() {
+    List<Integer> types = super.getStatementTypes();
     if (isOriginalStale(types)) {
       /*
        * Use opportunity to update originals if a ParameterDescribe has been
@@ -96,32 +102,37 @@ public class BatchedQueryDecorator extends SimpleQuery {
    *
    * @return int an array of {@link org.postgresql.core.Oid} parameter types
    */
-  private int[] resizeTypes() {
+  private List<Integer> resizeTypes() {
     // provide types depending on batch size, which may vary
     int expected = getBindPositions();
-    int[] types = super.getStatementTypes();
+    List<Integer> types = super.getStatementTypes();
 
     if (types == null) {
-      types = fill(expected);
+      types = new ArrayList<Integer>(expected*10);
+      fill(expected, types);
     }
-    if (types.length < expected) {
-      types = fill(expected);
+    if (types.size() < expected) {
+      fill(expected, types);
     }
     setStatementTypes(types);
     return types;
   }
 
-  private int[] fill(int expected) {
-    int[] types = Arrays.copyOf(originalPreparedTypes, expected);
-    for (int row = 1; row < getBatchSize(); row += 1) {
-      System.arraycopy(originalPreparedTypes, 0, types, row
-          * originalPreparedTypes.length, originalPreparedTypes.length);
+  private void fill(int expected, List<Integer> types) {
+    if (originalPreparedTypes.isEmpty()) {
+      for (int i = 0; i < expected ; i += 1) {
+        types.add(Oid.UNSPECIFIED);
+      }
+    } else {
+      int count = (expected - types.size())/ originalPreparedTypes.size();
+      for (int i = 0; i < count; i += 1) {
+        types.addAll(originalPreparedTypes);
+      }
     }
-    return types;
   }
 
   @Override
-  boolean isPreparedFor(int[] paramTypes) {
+  boolean isPreparedFor(List<Integer> paramTypes) {
     resizeTypes();
     return isStatementParsed() && super.isPreparedFor(paramTypes);
   }
@@ -156,42 +167,42 @@ public class BatchedQueryDecorator extends SimpleQuery {
    * @return boolean value indicating if internal type information needs
    *         updating
    */
-  private boolean isOriginalStale(int[] preparedTypes) {
+  private boolean isOriginalStale(List<Integer> preparedTypes) {
     if (isPreparedTypesSet) {
       return false;
     }
     if (preparedTypes == null) {
       return false;
     }
-    if (preparedTypes.length == 0) {
+    if (preparedTypes.size() == 0) {
       return false;
     }
-    if (preparedTypes.length < originalPreparedTypes.length) {
+    if (preparedTypes.size() < originalPreparedTypes.size()) {
       return false;
     }
-    int maxPos = originalPreparedTypes.length - 1;
+    int maxPos = originalPreparedTypes.size() - 1;
     for (int pos = 0; pos <= maxPos; pos += 1) {
-      if (originalPreparedTypes[pos] == UNSPECIFIED
-          && preparedTypes[pos] != UNSPECIFIED) {
+      if (originalPreparedTypes.get(pos) == UNSPECIFIED
+          && preparedTypes.get(pos) != UNSPECIFIED) {
         return true;
       }
     }
     return false;
   }
 
-  private void updateOriginal(int[] preparedTypes) {
+  private void updateOriginal(List<Integer> preparedTypes) {
     if (preparedTypes == null) {
       return;
     }
-    if (preparedTypes.length == 0) {
+    if (preparedTypes.size() == 0) {
       return;
     }
     isPreparedTypesSet = true;
-    int maxPos = originalPreparedTypes.length - 1;
+    int maxPos = originalPreparedTypes.size() - 1;
     for (int pos = 0; pos <= maxPos; pos++) {
-      if (preparedTypes[pos] != UNSPECIFIED) {
-        if (originalPreparedTypes[pos] == UNSPECIFIED) {
-          originalPreparedTypes[pos] = preparedTypes[pos];
+      if (preparedTypes.get(pos) != UNSPECIFIED) {
+        if (originalPreparedTypes.get(pos) == UNSPECIFIED) {
+          originalPreparedTypes.set(pos, preparedTypes.get(pos));
         }
       } else {
         isPreparedTypesSet = false;

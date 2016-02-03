@@ -16,6 +16,7 @@ import org.postgresql.core.ParameterList;
 import org.postgresql.core.Utils;
 
 import java.lang.ref.PhantomReference;
+import java.util.List;
 
 /**
  * V3 Query implementation for a single-statement query. This also holds the state of any associated
@@ -114,11 +115,11 @@ class SimpleQuery implements V3Query {
     }
   }
 
-  void setStatementTypes(int[] paramTypes) {
+  void setStatementTypes(List<Integer> paramTypes) {
     this.preparedTypes = paramTypes;
   }
 
-  int[] getStatementTypes() {
+  List<Integer> getStatementTypes() {
     return preparedTypes;
   }
 
@@ -126,15 +127,15 @@ class SimpleQuery implements V3Query {
     return statementName;
   }
 
-  boolean isPreparedFor(int[] paramTypes) {
+  boolean isPreparedFor(List<Integer> paramTypes) {
     if (statementName == null) {
       return false; // Not prepared.
     }
 
-    assert paramTypes.length == preparedTypes.length : String.format("paramTypes:%1$d preparedTypes:%2$d", paramTypes.length, preparedTypes.length);
+    assert paramTypes.size() == preparedTypes.size() : String.format("paramTypes:%1$d preparedTypes:%2$d", paramTypes.size(), preparedTypes.size());
     // Check for compatible types.
-    for (int i = 0; i < paramTypes.length; ++i) {
-      if (paramTypes[i] != Oid.UNSPECIFIED && paramTypes[i] != preparedTypes[i]) {
+    for (int i = 0; i < paramTypes.size(); ++i) {
+      if (paramTypes.get(i) != Oid.UNSPECIFIED && paramTypes.get(i) != preparedTypes.get(i)) {
         return false;
       }
     }
@@ -297,7 +298,7 @@ class SimpleQuery implements V3Query {
   private boolean portalDescribed;
   private boolean statementDescribed;
   private PhantomReference<?> cleanupRef;
-  private int[] preparedTypes;
+  private List<Integer> preparedTypes;
 
   private Integer cachedMaxResultRowSize;
 

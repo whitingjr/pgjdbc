@@ -11,6 +11,7 @@ package org.postgresql.core;
 
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Abstraction of a list of parameters to be substituted into a Query. The protocol-specific details
@@ -58,7 +59,7 @@ public interface ParameterList {
    *
    * @return oids of the parameters
    */
-  public int[] getTypeOIDs();
+  public List<Integer> getTypeOIDs();
 
   /**
    * Binds an integer value to a parameter. The type of the parameter is implicitly 'int4'.
@@ -176,17 +177,23 @@ public interface ParameterList {
    * Current parameters are cleared.
    * @param list of parameters to overwrite with.
    */
-  void addAll(ParameterList list);
-
+  void replace(ParameterList list);
+  
   /**
    * Use this operation to append more parameters to the current list.
    * @param list of parameters to append with.
    */
-  void appendAll(ParameterList list);
+  void addAll(ParameterList list);
 
   /**
    * Returns the bound parameter values.
    * @return Object array containing the parameter values.
    */
-  Object[] getValues();
+  List<Object> getValues();
+
+  /**
+   * Shrink the size of the list
+   * @param size int value that is the target size
+   */
+  public void shrink(int size);
 }

@@ -15,24 +15,25 @@ import org.postgresql.util.PSQLState;
 
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
+import java.util.List;
 
 public class PgParameterMetaData implements ParameterMetaData {
 
   private final BaseConnection _connection;
-  private final int _oids[];
+  private final List<Integer> _oids;
 
-  public PgParameterMetaData(BaseConnection connection, int oids[]) {
+  public PgParameterMetaData(BaseConnection connection, List<Integer> oids) {
     _connection = connection;
     _oids = oids;
   }
 
   public String getParameterClassName(int param) throws SQLException {
     checkParamIndex(param);
-    return _connection.getTypeInfo().getJavaClass(_oids[param - 1]);
+    return _connection.getTypeInfo().getJavaClass(_oids.get(param - 1));
   }
 
   public int getParameterCount() {
-    return _oids.length;
+    return _oids.size();
   }
 
   /**
@@ -46,12 +47,12 @@ public class PgParameterMetaData implements ParameterMetaData {
 
   public int getParameterType(int param) throws SQLException {
     checkParamIndex(param);
-    return _connection.getTypeInfo().getSQLType(_oids[param - 1]);
+    return _connection.getTypeInfo().getSQLType(_oids.get(param - 1));
   }
 
   public String getParameterTypeName(int param) throws SQLException {
     checkParamIndex(param);
-    return _connection.getTypeInfo().getPGType(_oids[param - 1]);
+    return _connection.getTypeInfo().getPGType(_oids.get(param - 1));
   }
 
   // we don't know this
@@ -77,14 +78,14 @@ public class PgParameterMetaData implements ParameterMetaData {
    */
   public boolean isSigned(int param) throws SQLException {
     checkParamIndex(param);
-    return _connection.getTypeInfo().isSigned(_oids[param - 1]);
+    return _connection.getTypeInfo().isSigned(_oids.get(param - 1));
   }
 
   private void checkParamIndex(int param) throws PSQLException {
-    if (param < 1 || param > _oids.length) {
+    if (param < 1 || param > _oids.size()) {
       throw new PSQLException(
           GT.tr("The parameter index is out of range: {0}, number of parameters: {1}.",
-              new Object[]{param, _oids.length}),
+              new Object[]{param, _oids.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
   }

@@ -24,6 +24,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import javax.net.SocketFactory;
@@ -38,7 +39,7 @@ import javax.net.SocketFactory;
  */
 public class V3ParameterListTests extends TestCase {
 
-  public void testMergeOfParameterLists() {
+  public void testAddAll() {
     try {
       SocketFactory socketFactory = SocketFactoryFactory.getSocketFactory(System.getProperties());
       HostSpec hostSpec = new HostSpec(TestUtil.getServer(), 5432);
@@ -60,7 +61,7 @@ public class V3ParameterListTests extends TestCase {
       Constructor initSPL = clsSPL.getDeclaredConstructor(new Class[] {
           Integer.TYPE, clsProtoConnImpl });
       initSPL.setAccessible(true);
-      Object s1SPL = initSPL.newInstance(8, oPCI);
+      Object s1SPL = initSPL.newInstance(4, oPCI);
       assertNotNull(s1SPL);
       Method msetIP = clsSPL.getMethod("setIntParameter", Integer.TYPE,
           Integer.TYPE);
@@ -78,7 +79,7 @@ public class V3ParameterListTests extends TestCase {
       msetIP.invoke(s2SPL, 3, 7);
       msetIP.invoke(s2SPL, 4, 8);
 
-      Method mappAll = clsSPL.getMethod("appendAll", ParameterList.class);
+      Method mappAll = clsSPL.getMethod("addAll", ParameterList.class);
       mappAll.setAccessible(true);
       mappAll.invoke(s1SPL, s2SPL);
 
@@ -86,41 +87,42 @@ public class V3ParameterListTests extends TestCase {
       mgetValues.setAccessible(true);
       Object oValues = mgetValues.invoke(s1SPL);
       assertNotNull(oValues);
-      assertTrue(oValues instanceof Object[]);
-      Object[] arrValues = (Object[]) oValues;
-      assertNotNull(arrValues[0]);
-      assertNotNull(arrValues[1]);
-      assertNotNull(arrValues[2]);
-      assertNotNull(arrValues[3]);
-      assertNotNull(arrValues[4]);
-      assertNotNull(arrValues[5]);
-      assertNotNull(arrValues[6]);
-      assertNotNull(arrValues[7]);
-      assertTrue(arrValues[0] instanceof byte[]);
-      assertTrue(arrValues[1] instanceof byte[]);
-      assertTrue(arrValues[2] instanceof byte[]);
-      assertTrue(arrValues[3] instanceof byte[]);
-      assertTrue(arrValues[4] instanceof byte[]);
-      assertTrue(arrValues[5] instanceof byte[]);
-      assertTrue(arrValues[6] instanceof byte[]);
-      assertTrue(arrValues[7] instanceof byte[]);
+      assertTrue(oValues instanceof List<?>);
+      List<Object> listValues = (List<Object>) oValues;
+      assertEquals(8, listValues.size());
+      assertNotNull(listValues.get(0));
+      assertNotNull(listValues.get(1));
+      assertNotNull(listValues.get(2));
+      assertNotNull(listValues.get(3));
+      assertNotNull(listValues.get(4));
+      assertNotNull(listValues.get(5));
+      assertNotNull(listValues.get(6));
+      assertNotNull(listValues.get(7));
+      assertTrue(listValues.get(0) instanceof byte[]);
+      assertTrue(listValues.get(1) instanceof byte[]);
+      assertTrue(listValues.get(2) instanceof byte[]);
+      assertTrue(listValues.get(3) instanceof byte[]);
+      assertTrue(listValues.get(4) instanceof byte[]);
+      assertTrue(listValues.get(5) instanceof byte[]);
+      assertTrue(listValues.get(6) instanceof byte[]);
+      assertTrue(listValues.get(7) instanceof byte[]);
       byte[] b = new byte[4];
       ByteConverter.int4(b, 0, 1);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[0]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(0)));
       ByteConverter.int4(b, 0, 2);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[1]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(1)));
       ByteConverter.int4(b, 0, 3);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[2]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(2)));
       ByteConverter.int4(b, 0, 4);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[3]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(3)));
       ByteConverter.int4(b, 0, 5);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[4]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(4)));
       ByteConverter.int4(b, 0, 6);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[5]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(5)));
       ByteConverter.int4(b, 0, 7);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[6]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(6)));
       ByteConverter.int4(b, 0, 8);
-      assertTrue(Arrays.equals(b, (byte[]) arrValues[7]));
+      assertTrue(Arrays.equals(b, (byte[]) listValues.get(7)));
     } catch (ClassNotFoundException cnfe) {
       fail(cnfe.getMessage());
     } catch (NoSuchMethodException nsme) {
@@ -138,7 +140,7 @@ public class V3ParameterListTests extends TestCase {
     }
   }
 
-  public void testAddAll() {
+  public void testBackingCollections() {
     try {
       SocketFactory socketFactory = SocketFactoryFactory.getSocketFactory(System.getProperties());
       HostSpec hostSpec = new HostSpec(TestUtil.getServer(), 5432);
@@ -159,7 +161,7 @@ public class V3ParameterListTests extends TestCase {
       Constructor initSPL = clsSPL.getDeclaredConstructor(new Class[] {
           Integer.TYPE, clsProtoConnImpl });
       initSPL.setAccessible(true);
-      Object s1SPL = initSPL.newInstance(new Object[] { 8, oPCI });
+      Object s1SPL = initSPL.newInstance(new Object[] { 4, oPCI });
       assertNotNull(s1SPL);
       Method msetIP = clsSPL.getMethod("setIntParameter", Integer.TYPE,
           Integer.TYPE);
@@ -174,8 +176,9 @@ public class V3ParameterListTests extends TestCase {
       mgetValues.setAccessible(true);
       Object oValues = mgetValues.invoke(s1SPL);
       assertNotNull(oValues);
-      assertTrue(oValues instanceof Object[]);
-      Object[] arrValues = (Object[]) oValues;
+      assertTrue(oValues instanceof List<?>);
+      List<Object> listValues = (List<Object>) oValues;
+      assertEquals(4, listValues.size());
 
       Method mgetV3Length = clsSPL.getDeclaredMethod("getV3Length",
           Integer.TYPE);
@@ -192,22 +195,24 @@ public class V3ParameterListTests extends TestCase {
       Method mgetFlags = clsSPL.getMethod("getFlags");
       mgetFlags.setAccessible(true);
       Object oFlags = mgetFlags.invoke(s1SPL);
-      assertTrue(oFlags instanceof byte[]);
-      byte[] flags = (byte[]) oFlags;
-      assertNotNull(flags[0]);
-      assertNotNull(flags[1]);
-      assertNotNull(flags[2]);
-      assertNotNull(flags[3]);
+      assertTrue(oFlags instanceof List<?>);
+      List<Byte> flags = (List<Byte>) oFlags;
+      assertEquals(4, flags.size());
+      assertNotNull(flags.get(0));
+      assertNotNull(flags.get(1));
+      assertNotNull(flags.get(2));
+      assertNotNull(flags.get(3));
 
       Method mgetParamTypes = clsSPL.getMethod("getParamTypes");
       mgetParamTypes.setAccessible(true);
       Object oparamTypes = mgetParamTypes.invoke(s1SPL);
-      assertTrue(oparamTypes instanceof int[]);
-      int[] paramTypes = (int[]) oparamTypes;
-      assertNotNull(paramTypes[0]);
-      assertNotNull(paramTypes[1]);
-      assertNotNull(paramTypes[2]);
-      assertNotNull(paramTypes[3]);
+      assertTrue(oparamTypes instanceof List<?>);
+      List<Integer> paramTypes = (List<Integer>) oparamTypes;
+      assertEquals(4, paramTypes.size());
+      assertNotNull(paramTypes.get(0));
+      assertNotNull(paramTypes.get(1));
+      assertNotNull(paramTypes.get(2));
+      assertNotNull(paramTypes.get(3));
     } catch (ClassNotFoundException cnfe) {
       fail(cnfe.getMessage());
     } catch (NoSuchMethodException nsme) {

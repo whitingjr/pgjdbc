@@ -15,6 +15,7 @@ import junit.framework.TestCase;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 
 /**
@@ -35,7 +36,7 @@ public class V2ParameterListTests extends TestCase {
       Constructor c = cls.getDeclaredConstructor(Integer.TYPE, Boolean.TYPE);
       c.setAccessible(true);
       Object o1SPL = c
-          .newInstance(new Object[] { new Integer(8), Boolean.TRUE });
+          .newInstance(new Object[] { new Integer(4), Boolean.TRUE });
       assertNotNull(o1SPL);
       Method msetIP = cls.getMethod("setIntParameter", Integer.TYPE,
           Integer.TYPE);
@@ -52,7 +53,7 @@ public class V2ParameterListTests extends TestCase {
       msetIP.invoke(o2SPL, 2, 6);
       msetIP.invoke(o2SPL, 3, 7);
       msetIP.invoke(o2SPL, 4, 8);
-      Method mappendAll = cls.getMethod("appendAll", ParameterList.class);
+      Method mappendAll = cls.getMethod("addAll", ParameterList.class);
       mappendAll.setAccessible(true);
       assertNotNull(mappendAll);
       mappendAll.invoke(o1SPL, o2SPL);
@@ -61,24 +62,24 @@ public class V2ParameterListTests extends TestCase {
 
       Object values = mgetValues.invoke(o1SPL);
       assertNotNull(values);
-      assertTrue(values instanceof Object[]);
-      Object[] vals = (Object[]) values;
-      assertNotNull(vals[0]);
-      assertEquals("1", (String) vals[0]);
-      assertNotNull(vals[1]);
-      assertEquals("2", (String) vals[1]);
-      assertNotNull(vals[2]);
-      assertEquals("3", (String) vals[2]);
-      assertNotNull(vals[3]);
-      assertEquals("4", (String) vals[3]);
-      assertNotNull(vals[4]);
-      assertEquals("5", (String) vals[4]);
-      assertNotNull(vals[5]);
-      assertEquals("6", (String) vals[5]);
-      assertNotNull(vals[6]);
-      assertEquals("7", (String) vals[6]);
-      assertNotNull(vals[7]);
-      assertEquals("8", (String) vals[7]);
+      assertTrue(values instanceof List<?>);
+      List<Object> vals = (List<Object>) values;
+      assertNotNull(vals.get(0));
+      assertEquals("1", vals.get(0));
+      assertNotNull(vals.get(1));
+      assertEquals("2", vals.get(1));
+      assertNotNull(vals.get(2));
+      assertEquals("3", vals.get(2));
+      assertNotNull(vals.get(3));
+      assertEquals("4", vals.get(3));
+      assertNotNull(vals.get(4));
+      assertEquals("5", vals.get(4));
+      assertNotNull(vals.get(5));
+      assertEquals("6", vals.get(5));
+      assertNotNull(vals.get(6));
+      assertEquals("7", vals.get(6));
+      assertNotNull(vals.get(7));
+      assertEquals("8", vals.get(7));
     } catch (ClassNotFoundException cnfe) {
       fail(cnfe.getMessage());
     } catch (NoSuchMethodException nsme) {

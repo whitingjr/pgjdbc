@@ -19,7 +19,8 @@ import org.postgresql.util.StreamWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of fastpath parameter lists for the V2 protocol. The V2 protocol expects different
@@ -30,7 +31,7 @@ import java.util.Arrays;
  */
 class FastpathParameterList implements ParameterList {
   FastpathParameterList(int paramCount) {
-    this.paramValues = new Object[paramCount];
+    this.paramValues = new ArrayList<Object>(paramCount);
   }
 
   public void registerOutParameter(int index, int sqlType) {
@@ -42,7 +43,7 @@ class FastpathParameterList implements ParameterList {
   ;
 
   public int getInParameterCount() {
-    return paramValues.length;
+    return paramValues.size();
   }
 
   public int getOutParameterCount() {
@@ -50,18 +51,18 @@ class FastpathParameterList implements ParameterList {
   }
 
   public int getParameterCount() {
-    return paramValues.length;
+    return paramValues.size();
   }
 
-  public int[] getTypeOIDs() {
+  public List<Integer> getTypeOIDs() {
     return null;
   }
 
   public void setIntParameter(int index, int value) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
@@ -71,7 +72,7 @@ class FastpathParameterList implements ParameterList {
     data[1] = (byte) (value >> 16);
     data[0] = (byte) (value >> 24);
 
-    paramValues[index - 1] = data;
+    paramValues.set(index - 1, data);
   }
 
   public void setLiteralParameter(int index, String value, int oid) throws SQLException {
@@ -80,40 +81,40 @@ class FastpathParameterList implements ParameterList {
   }
 
   public void setStringParameter(int index, String value, int oid) throws SQLException {
-    paramValues[index - 1] = value;
+    paramValues.set(index - 1, value);
   }
 
   public void setBytea(int index, byte[] data, int offset, int length) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = new StreamWrapper(data, offset, length);
+    paramValues.set(index - 1, new StreamWrapper(data, offset, length));
   }
 
   public void setBytea(int index, final InputStream stream, final int length) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = new StreamWrapper(stream, length);
+    paramValues.set(index - 1, new StreamWrapper(stream, length));
   }
 
   public void setBytea(int index, InputStream stream) throws SQLException {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.length}),
+              new Object[]{index, paramValues.size()}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues[index - 1] = new StreamWrapper(stream);
+    paramValues.set(index - 1, new StreamWrapper(stream));
   }
 
   public void setNull(int index, int oid) throws SQLException {
@@ -121,7 +122,7 @@ class FastpathParameterList implements ParameterList {
   }
 
   public String toString(int index) {
-    if (index < 1 || index > paramValues.length) {
+    if (index < 1 || index > paramValues.size()) {
       throw new IllegalArgumentException("parameter " + index + " out of range");
     }
 
@@ -141,16 +142,16 @@ class FastpathParameterList implements ParameterList {
   void writeV2FastpathValue(int index, PGStream pgStream) throws IOException {
     --index;
 
-    if (paramValues[index] instanceof StreamWrapper) {
-      StreamWrapper wrapper = (StreamWrapper) paramValues[index];
+    if (paramValues.get(index) instanceof StreamWrapper) {
+      StreamWrapper wrapper = (StreamWrapper) paramValues.get(index);
       pgStream.SendInteger4(wrapper.getLength());
       copyStream(pgStream, wrapper);
-    } else if (paramValues[index] instanceof byte[]) {
-      byte[] data = (byte[]) paramValues[index];
+    } else if (paramValues.get(index) instanceof byte[]) {
+      byte[] data = (byte[]) paramValues.get(index);
       pgStream.SendInteger4(data.length);
       pgStream.Send(data);
-    } else if (paramValues[index] instanceof String) {
-      byte[] data = pgStream.getEncoding().encode((String) paramValues[index]);
+    } else if (paramValues.get(index) instanceof String) {
+      byte[] data = pgStream.getEncoding().encode((String) paramValues.get(index));
       pgStream.SendInteger4(data.length);
       pgStream.Send(data);
     } else {
@@ -159,8 +160,8 @@ class FastpathParameterList implements ParameterList {
   }
 
   void checkAllParametersSet() throws SQLException {
-    for (int i = 0; i < paramValues.length; i++) {
-      if (paramValues[i] == null) {
+    for (int i = 0; i < paramValues.size(); i++) {
+      if (paramValues.get(i) == null) {
         throw new PSQLException(GT.tr("No value specified for parameter {0}.", i + 1),
             PSQLState.INVALID_PARAMETER_VALUE);
       }
@@ -168,37 +169,33 @@ class FastpathParameterList implements ParameterList {
   }
 
   public ParameterList copy() {
-    FastpathParameterList newCopy = new FastpathParameterList(paramValues.length);
-    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.length);
+    FastpathParameterList newCopy = new FastpathParameterList(paramValues.size());
+    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.size());
     return newCopy;
   }
 
   public void clear() {
-    Arrays.fill(paramValues, null);
+    paramValues.clear();
   }
 
   public void setBinaryParameter(int index, byte[] value, int oid) {
     throw new UnsupportedOperationException();
   }
 
-  private final Object[] paramValues;
+  private final List<Object> paramValues;
 
   @Override
-  public Object[] getValues() {
+  public List<Object> getValues() {
     return this.paramValues;
   }
 
   @Override
-  /**
-   * Replace all parameters with new values in provided list.
-   */
-  public void addAll(ParameterList list) {
+  public void replace(ParameterList list) {
     if (list instanceof SimpleParameterList ) {
       // only v2.SimpleParameterList is compatible with this type
       SimpleParameterList spl = (SimpleParameterList) list;
-      Arrays.fill(paramValues, null);
-      System.arraycopy(spl.getValues(), 0, paramValues, 0,
-          spl.getInParameterCount());
+      clear();
+      paramValues.addAll(spl.getValues());
     }
   }
 
@@ -206,14 +203,13 @@ class FastpathParameterList implements ParameterList {
   /**
    * Append parameters to the list.
    */
-  public void appendAll(ParameterList list) {
-    if (list instanceof SimpleParameterList ) {
-      // only v2.SimpleParameterList is compatible with this type
-      SimpleParameterList spl = (SimpleParameterList) list;
-      int count = spl.getInParameterCount();
-      System.arraycopy(spl.getValues(), 0, paramValues,
-          getInParameterCount() - count, count);
-    }
+  public void addAll(ParameterList list) {
+    paramValues.addAll(list.getValues());
+  }
+
+  @Override
+  public void shrink(int size) {
+    // no-op, unsupported
   }
 }
 

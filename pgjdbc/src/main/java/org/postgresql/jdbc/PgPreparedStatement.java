@@ -1505,7 +1505,7 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
   }
   //#endif
 
-  public ParameterMetaData createParameterMetaData(BaseConnection conn, int oids[])
+  public ParameterMetaData createParameterMetaData(BaseConnection conn, List<Integer> oids)
       throws SQLException {
     return new PgParameterMetaData(conn, oids);
   }
@@ -1653,7 +1653,7 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
     connection.getQueryExecutor().execute(preparedQuery.query, preparedParameters, handler, 0, 0,
         flags);
 
-    int oids[] = preparedParameters.getTypeOIDs();
+    List<Integer> oids = preparedParameters.getTypeOIDs();
     if (oids != null) {
       return createParameterMetaData(connection, oids);
     }
@@ -1676,20 +1676,27 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
     decoratedQuery.incrementBatchSize();
 
     // create a new paramlist that is sized correctly
-    ParameterList replacement = decoratedQuery.createParameterList();
-    ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size() - 1);
-    replacement.addAll(old);
-    replacement.appendAll(preparedParameters);
-    batchParameters.add(replacement);
+    ParameterList params = batchParameters.get(batchParameters.size() -1);
+    params.addAll(preparedParameters);
 
     // resize and populate .fields and .preparedTypes meta data
-    int singleBatchparamCount = replacement.getParameterCount() / decoratedQuery.getBatchSize();
+    int singleBatchparamCount = params.getParameterCount() / decoratedQuery.getBatchSize();
 
-    int[] userTypeInformation = preparedParameters.getTypeOIDs();
-    if (userTypeInformation != null && userTypeInformation.length > 0
-        && userTypeInformation.length == singleBatchparamCount) {
+    List<Integer> userTypeInformation = preparedParameters.getTypeOIDs();
+    if (userTypeInformation != null && userTypeInformation.size() > 0
+        && userTypeInformation.size() == singleBatchparamCount) {
       decoratedQuery.setStatementTypes(userTypeInformation);
     }
   }
 
+  @Override
+  public int[] executeBatch() throws SQLException {
+    int[] outcome = super.executeBatch();
+    if (reWriteBatchedInserts && preparedQuery.query instanceof BatchedQueryDecorator) {
+      BatchedQueryDecorator bqd = (BatchedQueryDecorator) preparedQuery.query;
+      int bp = bqd.getNativeQuery().bindPositions.length;
+      preparedParameters.shrink(bp);
+    }
+    return outcome;
+  }
 }

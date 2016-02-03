@@ -16,6 +16,8 @@ import org.postgresql.util.PSQLState;
 
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Parameter list for V3 query strings that contain multiple statements. We delegate to one
@@ -67,11 +69,10 @@ class CompositeParameterList implements V3ParameterList {
     return 0;
   }
 
-  public int[] getTypeOIDs() {
-    int oids[] = new int[total];
+  public List<Integer> getTypeOIDs() {
+    List<Integer> oids = new ArrayList<Integer>(total);
     for (int i = 0; i < offsets.length; i++) {
-      int subOids[] = subparams[i].getTypeOIDs();
-      System.arraycopy(subOids, 0, oids, offsets[i], subOids.length);
+      oids.addAll(subparams[i].getTypeOIDs());
     }
     return oids;
   }
@@ -151,22 +152,27 @@ class CompositeParameterList implements V3ParameterList {
   }
 
   @Override
-  public byte[][] getEncoding() {
+  public List<byte[]> getEncoding() {
     return null; // unsupported
   }
 
-  public byte[] getFlags() {
-    return null; // unsupported
-  }
-
-  @Override
-  public int[] getParamTypes() {
+  public List<Byte> getFlags() {
     return null; // unsupported
   }
 
   @Override
-  public Object[] getValues() {
+  public List<Integer> getParamTypes() {
     return null; // unsupported
+  }
+
+  @Override
+  public List<Object> getValues() {
+    return null; // unsupported
+  }
+
+  @Override
+  public void replace(ParameterList list) {
+    // no-op, unsupported
   }
 
   @Override
@@ -175,8 +181,8 @@ class CompositeParameterList implements V3ParameterList {
   }
 
   @Override
-  public void appendAll(ParameterList list) {
-    // no-op, unsupported
+  public void shrink(int size) {
+    // on-op, unsupported
   }
 
   public void convertFunctionOutParameters() {

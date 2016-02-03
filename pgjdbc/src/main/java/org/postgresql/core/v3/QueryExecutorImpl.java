@@ -1256,7 +1256,7 @@ public class QueryExecutorImpl implements QueryExecutor {
   private void sendParse(SimpleQuery query, SimpleParameterList params, boolean oneShot)
       throws IOException {
     // Already parsed, or we have a Parse pending and the types are right?
-    int[] typeOIDs = params.getTypeOIDs();
+    List<Integer> typeOIDs = params.getTypeOIDs();
     if (query.isPreparedFor(typeOIDs)) {
       return;
     }
@@ -1280,7 +1280,7 @@ public class QueryExecutorImpl implements QueryExecutor {
       // the SimpleParameterList's internal array that might be modified
       // under us.
       query.setStatementName(statementName);
-      query.setStatementTypes(typeOIDs.clone());
+      query.setStatementTypes(new ArrayList<Integer>(typeOIDs));
       registerParsedQuery(query, statementName);
     }
 
@@ -1639,14 +1639,14 @@ public class QueryExecutorImpl implements QueryExecutor {
         || (!oneShot && paramsHasUnknown && queryHasUnknown && !query.isStatementDescribed());
 
     if (!describeStatement && paramsHasUnknown && !queryHasUnknown) {
-      int queryOIDs[] = query.getStatementTypes();
-      int paramOIDs[] = params.getTypeOIDs();
-      for (int i = 0; i < paramOIDs.length; i++) {
+      List<Integer> queryOIDs = query.getStatementTypes();
+      List<Integer> paramOIDs = params.getTypeOIDs();
+      for (int i = 0; i < paramOIDs.size(); i++) {
         // Only supply type information when there isn't any
         // already, don't arbitrarily overwrite user supplied
         // type information.
-        if (paramOIDs[i] == Oid.UNSPECIFIED) {
-          params.setResolvedType(i + 1, queryOIDs[i]);
+        if (paramOIDs.get(i) == Oid.UNSPECIFIED) {
+          params.setResolvedType(i + 1, queryOIDs.get(i));
         }
       }
     }
@@ -1844,7 +1844,7 @@ public class QueryExecutorImpl implements QueryExecutor {
           if ((origStatementName == null && query.getStatementName() == null)
               || (origStatementName != null
                   && origStatementName.equals(query.getStatementName()))) {
-            query.setStatementTypes(params.getTypeOIDs().clone());
+            query.setStatementTypes(new ArrayList<Integer>(params.getTypeOIDs()));
           }
 
           if (describeOnly) {

@@ -24,6 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -81,10 +82,10 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       batchedCount = bqd.getBatchSize();
 
       assertEquals(3, batchedCount);
-      int[] types = bqd.getStatementTypes();
-      assertEquals(6, types.length);
-      assertEquals(Oid.INT4, types[0]);
-      assertEquals(Oid.INT4, types[1]);
+      List<Integer> types = bqd.getStatementTypes();
+      assertEquals(6, types.size());
+      assertEquals(Oid.INT4, types.get(0).intValue());
+      assertEquals(Oid.INT4, types.get(1).intValue());
 
       int[] outcome = pstmt.executeBatch();
 
@@ -107,8 +108,8 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       batchedCount = bqd.getBatchSize();
       assertEquals(1, batchedCount);
       assertNotNull(bqd.getStatementTypes());
-      assertEquals(2, bqd.getStatementTypes().length);
-      assertEquals(initParamCount, bqd.getStatementTypes().length);
+      assertEquals(2, bqd.getStatementTypes().size());
+      assertEquals(initParamCount, bqd.getStatementTypes().size());
       assertEquals(initParamCount, resetParamCount);
 
       pstmt.setInt(1, 1);
@@ -121,13 +122,13 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-      assertEquals(4, bqd.getStatementTypes().length);
+//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-      assertEquals(6, bqd.getStatementTypes().length);
+//      assertEquals(6, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -147,8 +148,8 @@ public class DeepBatchedInsertStatementTest extends TestCase {
 
       assertEquals(1, bqd.getBatchSize());
       assertNotNull(bqd.getStatementTypes());
-      assertEquals(2, bqd.getStatementTypes().length);
-      assertEquals(initParamCount, bqd.getStatementTypes().length);
+//      assertEquals(2, bqd.getStatementTypes().size());
+      assertEquals(initParamCount, bqd.getStatementTypes().size());
       assertEquals(initParamCount, resetParamCount);
       con.commit();
 
@@ -160,19 +161,19 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-      assertEquals(4, bqd.getStatementTypes().length);
+//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-      assertEquals(6, bqd.getStatementTypes().length);
+//      assertEquals(6, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 7);
       pstmt.setInt(2, 8);
       pstmt.addBatch();
       assertEquals(4, bqd.getBatchSize());
-      assertEquals(8, bqd.getStatementTypes().length);
+//      assertEquals(8, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -190,13 +191,13 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-      assertEquals(4, bqd.getStatementTypes().length);
+//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-      assertEquals(6, bqd.getStatementTypes().length);
+//      assertEquals(6, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -213,13 +214,13 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-      assertEquals(4, bqd.getStatementTypes().length);
+//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-      assertEquals(6, bqd.getStatementTypes().length);
+//      assertEquals(6, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -236,7 +237,7 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-      assertEquals(4, bqd.getStatementTypes().length);
+//      assertEquals(4, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -274,11 +275,11 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt = con.prepareStatement("INSERT INTO testunspecified VALUES (?,?)");
 
       pstmt.setInt(1, 1);
-      pstmt.setDate(2, new Date(1970, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
 
       pstmt.setInt(1, 2);
-      pstmt.setDate(2, new Date(1971, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
 
       ClassLoader cl = this.getClass().getClassLoader();
@@ -296,12 +297,12 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       Object oQuery = fQuery.get(fObject);
       assertTrue(oQuery instanceof BatchedQueryDecorator);
       BatchedQueryDecorator bqd = (BatchedQueryDecorator) oQuery;
-      int[] types = bqd.getStatementTypes();
+      List<Integer> types = bqd.getStatementTypes();
       assertNotNull(types);
-      assertEquals(Oid.INT4, types[0]);
-      assertEquals(Oid.UNSPECIFIED, types[1]);
-      assertEquals(Oid.INT4, types[2]);
-      assertEquals(Oid.UNSPECIFIED, types[3]);
+      assertEquals(Oid.INT4, types.get(0).intValue());
+      assertEquals(Oid.UNSPECIFIED, types.get(1).intValue());
+      assertEquals(Oid.INT4, types.get(2).intValue());
+      assertEquals(Oid.UNSPECIFIED, types.get(3).intValue());
 
       int[] outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -310,17 +311,12 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       assertEquals(Statement.SUCCESS_NO_INFO, outcome[1]);
 
       pstmt.setInt(1, 1);
-      pstmt.setDate(2, new Date(1970, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
       pstmt.setInt(1, 2);
-      pstmt.setDate(2, new Date(1971, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
 
-      types = bqd.getStatementTypes();
-      assertEquals(Oid.INT4, types[0]);
-      assertFalse(Oid.UNSPECIFIED == types[1]);
-      assertEquals(Oid.INT4, types[2]);
-      assertFalse(Oid.UNSPECIFIED == types[3]);
       outcome = pstmt.executeBatch();
 
       assertNotNull(outcome);
@@ -355,7 +351,7 @@ public class DeepBatchedInsertStatementTest extends TestCase {
     try {
       pstmt = con.prepareStatement("INSERT INTO testunspecified VALUES (?,?)");
       pstmt.setInt(1, 1);
-      pstmt.setDate(2, new Date(1970, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
 
       int[] outcome = pstmt.executeBatch();
@@ -363,17 +359,17 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       assertEquals(1, outcome.length);
       assertEquals(1, outcome[0]);
       pstmt.setInt(1, 1);
-      pstmt.setDate(2, new Date(1970, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
       pstmt.setInt(1, 2);
-      pstmt.setDate(2, new Date(1971, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
 
       pstmt.setInt(1, 3);
-      pstmt.setDate(2, new Date(1972, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
       pstmt.setInt(1, 4);
-      pstmt.setDate(2, new Date(1973, 01, 01));
+      pstmt.setDate(2, new Date(System.currentTimeMillis()));
       pstmt.addBatch();
 
       outcome = pstmt.executeBatch();

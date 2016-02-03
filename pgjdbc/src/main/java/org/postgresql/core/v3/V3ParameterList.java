@@ -12,6 +12,7 @@ package org.postgresql.core.v3;
 import org.postgresql.core.ParameterList;
 
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Common interface for all V3 parameter list implementations.
@@ -47,17 +48,17 @@ interface V3ParameterList extends ParameterList {
    * Return the parameter type information.
    * @return an array of {@link org.postgresql.core.Oid} type information
    */
-  int[] getParamTypes();
+  List<Integer> getParamTypes();
 
   /**
    * Return the flags for each parameter.
    * @return an array of bytes used to store flags.
    */
-  byte[] getFlags();
+  List<Byte> getFlags();
 
   /**
    * Return the encoding for each parameter.
    * @return nested byte array of bytes with encoding information.
    */
-  byte[][] getEncoding();
+  List<byte[]> getEncoding();
 }
