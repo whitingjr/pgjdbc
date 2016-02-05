@@ -108,7 +108,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     List<Integer> types = super.getStatementTypes();
 
     if (types == null) {
-      types = new ArrayList<Integer>(expected*10);
+      types = new ArrayList<Integer>();
       fill(expected, types);
     }
     if (types.size() < expected) {
