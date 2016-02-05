@@ -425,9 +425,9 @@ class SimpleParameterList implements V3ParameterList {
     }
   }
 
-  /** Add elements to collections to preserve behaviour of array use. Avoids 
+  /** Add elements to collections to preserve behaviour of array use. Avoids
    * NPE or ArrayIndexOutOfBoundsException.
-   * 
+   *
    * @param size number of parameters
    */
   public void fill(int size) {
@@ -446,8 +446,8 @@ class SimpleParameterList implements V3ParameterList {
   @Override
   public void shrink(int size) {
     int n = paramValues.size() - size;
-    for (int i = 0; i < n ; i+= 1) {
-      paramValues.remove(paramValues.size()-1);
+    for (int i = 0; i < n ; i += 1) {
+      paramValues.remove(paramValues.size() - 1);
     }
     n = paramTypes.size() - size;
     for (int i = 0; i < n; i += 1 ) {

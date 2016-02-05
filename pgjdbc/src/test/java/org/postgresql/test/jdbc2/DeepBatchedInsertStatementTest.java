@@ -122,13 +122,11 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-//      assertEquals(6, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -148,7 +146,6 @@ public class DeepBatchedInsertStatementTest extends TestCase {
 
       assertEquals(1, bqd.getBatchSize());
       assertNotNull(bqd.getStatementTypes());
-//      assertEquals(2, bqd.getStatementTypes().size());
       assertEquals(initParamCount, bqd.getStatementTypes().size());
       assertEquals(initParamCount, resetParamCount);
       con.commit();
@@ -161,19 +158,16 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-//      assertEquals(6, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 7);
       pstmt.setInt(2, 8);
       pstmt.addBatch();
       assertEquals(4, bqd.getBatchSize());
-//      assertEquals(8, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -191,13 +185,11 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-//      assertEquals(6, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -214,13 +206,11 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-//      assertEquals(4, bqd.getStatementTypes().size());
 
       pstmt.setInt(1, 5);
       pstmt.setInt(2, 6);
       pstmt.addBatch();
       assertEquals(3, bqd.getBatchSize());
-//      assertEquals(6, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);
@@ -237,7 +227,6 @@ public class DeepBatchedInsertStatementTest extends TestCase {
       pstmt.setInt(2, 4);
       pstmt.addBatch();
       assertEquals(2, bqd.getBatchSize());
-//      assertEquals(4, bqd.getStatementTypes().size());
 
       outcome = pstmt.executeBatch();
       assertNotNull(outcome);

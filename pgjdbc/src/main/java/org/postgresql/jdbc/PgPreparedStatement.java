@@ -1676,7 +1676,7 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
     decoratedQuery.incrementBatchSize();
 
     // create a new paramlist that is sized correctly
-    ParameterList params = batchParameters.get(batchParameters.size() -1);
+    ParameterList params = batchParameters.get(batchParameters.size() - 1);
     params.addAll(preparedParameters);
 
     // resize and populate .fields and .preparedTypes meta data

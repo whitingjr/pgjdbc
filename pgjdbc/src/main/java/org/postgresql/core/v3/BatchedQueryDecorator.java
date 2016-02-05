@@ -124,7 +124,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
         types.add(Oid.UNSPECIFIED);
       }
     } else {
-      int count = (expected - types.size())/ originalPreparedTypes.size();
+      int count = (expected - types.size()) / originalPreparedTypes.size();
       for (int i = 0; i < count; i += 1) {
         types.addAll(originalPreparedTypes);
       }
