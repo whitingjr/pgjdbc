@@ -24,7 +24,7 @@ import java.sql.SQLException;
  * {@link #createParameterizedQuery})
  * <li>execution methods for created Query objects (
  * {@link #execute(Query, ParameterList, ResultHandler, int, int, int)} for single queries and
- * {@link #execute(Query[], ParameterList[], ResultHandler, int, int, int)} for batches of queries)
+ * {@link #execute(Query[], ParameterList[], int, ResultHandler, int, int, int)} for batches of queries)
  * <li>a fastpath call interface ({@link #createFastpathParameters} and {@link #fastpathCall}).
  * </ul>
  *
@@ -142,8 +142,8 @@ public interface QueryExecutor {
    * @param flags a combination of QUERY_* flags indicating how to handle the query.
    * @throws SQLException if query execution fails
    */
-  void execute(Query[] queries, ParameterList[] parameterLists, ResultHandler handler, int maxRows,
-      int fetchSize, int flags) throws SQLException;
+  void execute(Query[] queries, ParameterList[] parameterLists, int numQueries, ResultHandler handler,
+               int maxRows, int fetchSize, int flags) throws SQLException;
 
   /**
    * Fetch additional rows from a cursor.

@@ -63,6 +63,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 //#endif
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -1118,21 +1119,27 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
     checkClosed();
 
     if (batchStatements == null) {
-      batchStatements = new ArrayList<Query>();
-      batchParameters = new ArrayList<ParameterList>();
+      batchStatements = new Query[5];
+      batchParameters = new ParameterList[5];
     }
+    //make sure that the array is big enough
+    else if(batchStatements.length == batchStatementsSize) {
+      batchStatements = Arrays.copyOf(batchStatements, batchStatements.length + batchStatementsSize/2);
+      batchParameters = Arrays.copyOf(batchParameters, batchParameters.length + batchStatementsSize/2);
+    }
+
     if (reWriteBatchedInserts && preparedQuery.query.isStatementReWritableInsert()) {
-      if (batchStatements.size() == 0) {
-        batchStatements.add(preparedQuery.query);
+      if (batchStatementsSize == 0) {
+        batchStatements[batchStatementsSize] = preparedQuery.query;
         // we need to create copies of our parameters, otherwise the values can be changed
-        batchParameters.add(preparedParameters.copy());
+        batchParameters[batchStatementsSize++] = preparedParameters.copy();
       } else {
         reWrite(batchStatements, batchParameters, preparedParameters);
       }
     } else {
       // we need to create copies of our parameters, otherwise the values can be changed
-      batchStatements.add(preparedQuery.query);
-      batchParameters.add(preparedParameters.copy());
+      batchStatements[batchStatementsSize] = preparedQuery.query;
+      batchParameters[batchStatementsSize++] = preparedParameters.copy();
     }
   }
 
@@ -1669,14 +1676,14 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
    * @param batchParameters all the parameters
    * @param preparedParameters all the prepared parameters
    */
-  private void reWrite(List<Query> batchStatements,
-      List<ParameterList> batchParameters, ParameterList preparedParameters) {
-    Query prior = batchStatements.get(batchStatements.size() - 1);
+  private void reWrite(Query[] batchStatements,
+      ParameterList[] batchParameters, ParameterList preparedParameters) {
+    Query prior = batchStatements[batchStatementsSize - 1];
     BatchedQueryDecorator decoratedQuery = (BatchedQueryDecorator)prior;
     decoratedQuery.incrementBatchSize();
 
     // create a new paramlist that is sized correctly
-    ParameterList params = batchParameters.get(batchParameters.size() - 1);
+    ParameterList params = batchParameters[batchStatementsSize - 1];
     params.addAll(preparedParameters);
 
     // resize and populate .fields and .preparedTypes meta data

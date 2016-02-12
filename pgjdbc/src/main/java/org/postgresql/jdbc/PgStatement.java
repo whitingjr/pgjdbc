@@ -36,6 +36,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -50,8 +51,9 @@ public class PgStatement implements Statement, BaseStatement {
   // only for testing purposes. even single shot statements will use binary transfers
   private boolean forceBinaryTransfers = DEFAULT_FORCE_BINARY_TRANSFERS;
 
-  protected ArrayList<Query> batchStatements = null;
-  protected ArrayList<ParameterList> batchParameters = null;
+  protected Query[] batchStatements = null;
+  protected ParameterList[] batchParameters = null;
+  protected int batchStatementsSize = 0;
   protected final int resultsettype; // the resultset type to return (ResultSet.TYPE_xxx)
   protected final int concurrency; // is it updateable or not? (ResultSet.CONCUR_xxx)
   private final int rsHoldability;
@@ -884,21 +886,29 @@ public class PgStatement implements Statement, BaseStatement {
     checkClosed();
 
     if (batchStatements == null) {
-      batchStatements = new ArrayList<Query>();
-      batchParameters = new ArrayList<ParameterList>();
+      batchStatements = new Query[5];
+      batchParameters = new ParameterList[5];
+    }
+    //make sure that the array is big enough
+    else if(batchStatements.length == batchStatementsSize) {
+      batchStatements = Arrays.copyOf(batchStatements, batchStatements.length + batchStatementsSize/2);
+      batchParameters = Arrays.copyOf(batchParameters, batchParameters.length + batchStatementsSize/2);
     }
 
     p_sql = replaceProcessing(p_sql, replaceProcessingEnabled,
         connection.getStandardConformingStrings());
 
-    batchStatements.add(connection.getQueryExecutor().createSimpleQuery(p_sql));
-    batchParameters.add(null);
+    batchStatements[batchStatementsSize] = connection.getQueryExecutor().createSimpleQuery(p_sql);
+    batchParameters[batchStatementsSize++] = null;
   }
 
   public void clearBatch() throws SQLException {
     if (batchStatements != null) {
-      batchStatements.clear();
-      batchParameters.clear();
+      for(int i=0; i < batchStatementsSize; i++) {
+        batchStatements[i] = null;
+        batchParameters[i] = null;
+      }
+      batchStatementsSize = 0;
     }
   }
 
@@ -913,19 +923,19 @@ public class PgStatement implements Statement, BaseStatement {
 
     closeForNextExecution();
 
-    if (batchStatements == null || batchStatements.isEmpty()) {
+    if (batchStatements == null || batchStatementsSize == 0) {
       return new int[0];
     }
 
-    int size = batchStatements.size();
+    int size = batchStatementsSize;
     int[] updateCounts = new int[size];
 
     // Construct query/parameter arrays.
-    Query[] queries = batchStatements.toArray(new Query[batchStatements.size()]);
-    ParameterList[] parameterLists =
-        batchParameters.toArray(new ParameterList[batchParameters.size()]);
-    batchStatements.clear();
-    batchParameters.clear();
+    //Query[] queries = batchStatements.toArray(new Query[batchStatements.size()]);
+    //ParameterList[] parameterLists =
+    //    batchParameters.toArray(new ParameterList[batchParameters.size()]);
+    //batchStatements.clear();
+    //batchParameters.clear();
 
     int flags = 0;
 
@@ -960,7 +970,7 @@ public class PgStatement implements Statement, BaseStatement {
       // maximum data returned. Without that, we don't know how many queries
       // we'll be able to queue up before we risk a deadlock.
       // (see v3.QueryExecutorImpl's MAX_BUFFERED_RECV_BYTES)
-      preDescribe = wantsGeneratedKeysAlways && !queries[0].isStatementDescribed();
+      preDescribe = wantsGeneratedKeysAlways && !batchStatements[0].isStatementDescribed();
       /*
        * It's also necessary to force a Describe on the first execution of the new statement, even
        * though we already described it, to work around bug #267.
@@ -978,7 +988,7 @@ public class PgStatement implements Statement, BaseStatement {
       // etc.
       int flags2 = flags | QueryExecutor.QUERY_DESCRIBE_ONLY;
       StatementResultHandler handler2 = new StatementResultHandler();
-      connection.getQueryExecutor().execute(queries[0], parameterLists[0], handler2, 0, 0, flags2);
+      connection.getQueryExecutor().execute(batchStatements[0], batchParameters[0], handler2, 0, 0, flags2);
       ResultWrapper result2 = handler2.getResults();
       if (result2 != null) {
         result2.getResultSet().close();
@@ -988,19 +998,21 @@ public class PgStatement implements Statement, BaseStatement {
     result = null;
 
     ResultHandler handler;
-    handler = createBatchHandler(updateCounts, queries, parameterLists);
+    handler = createBatchHandler(updateCounts, Arrays.copyOf(batchStatements, batchStatementsSize),
+            Arrays.copyOf(batchParameters, batchStatementsSize));
 
     try {
       startTimer();
-      connection.getQueryExecutor().execute(queries, parameterLists, handler, maxrows, fetchSize,
+      connection.getQueryExecutor().execute(batchStatements, batchParameters, batchStatementsSize,
+              handler, maxrows, fetchSize,
           flags);
     } finally {
       killTimerTask();
     }
 
-    if (reWriteBatchedInserts && queries[0].isStatementReWritableInsert()) {
-      if (queries[0] instanceof BatchedQueryDecorator) {
-        BatchedQueryDecorator bqd = (BatchedQueryDecorator)queries[0];
+    if (reWriteBatchedInserts && batchStatements[0].isStatementReWritableInsert()) {
+      if (batchStatements[0] instanceof BatchedQueryDecorator) {
+        BatchedQueryDecorator bqd = (BatchedQueryDecorator)batchStatements[0];
         int batchSize = bqd.getBatchSize();
         if (batchSize > 1) {
           updateCounts = new int[batchSize];
@@ -1020,6 +1032,8 @@ public class PgStatement implements Statement, BaseStatement {
     if (wantsGeneratedKeysAlways) {
       generatedKeys = new ResultWrapper(((BatchResultHandler) handler).getGeneratedKeys());
     }
+
+    clearBatch();
 
     return updateCounts;
   }

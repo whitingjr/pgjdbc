@@ -270,7 +270,7 @@ public class QueryExecutorImpl implements QueryExecutor {
   }
 
   // Nothing special yet, just run the queries one at a time.
-  public synchronized void execute(Query[] queries, ParameterList[] parameters,
+  public synchronized void execute(Query[] queries, ParameterList[] parameters, int numQueries,
       ResultHandler handler, int maxRows, int fetchSize, int flags) throws SQLException {
     final ResultHandler delegateHandler = handler;
     handler = new ResultHandler() {
@@ -295,7 +295,7 @@ public class QueryExecutorImpl implements QueryExecutor {
       }
     };
 
-    for (int i = 0; i < queries.length; ++i) {
+    for (int i = 0; i < numQueries; ++i) {
       execute((V2Query) queries[i], (SimpleParameterList) parameters[i], handler, maxRows, flags);
     }
 

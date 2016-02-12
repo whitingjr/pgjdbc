@@ -321,21 +321,25 @@ public class QueryExecutorImpl implements QueryExecutor {
       return sawError;
     }
   }
-
   public synchronized void execute(Query[] queries, ParameterList[] parameterLists,
+      ResultHandler handler, int maxRows, int fetchSize, int flags) throws SQLException {
+    execute(queries, parameterLists, queries.length, handler, maxRows, fetchSize, flags);
+  }
+
+  public synchronized void execute(Query[] queries, ParameterList[] parameterLists, int numQueries,
       ResultHandler handler, int maxRows, int fetchSize, int flags) throws SQLException {
     waitOnLock();
     if (logger.logDebug()) {
-      logger.debug("batch execute " + queries.length + " queries, handler=" + handler + ", maxRows="
+      logger.debug("batch execute " + numQueries + " queries, handler=" + handler + ", maxRows="
           + maxRows + ", fetchSize=" + fetchSize + ", flags=" + flags);
     }
 
     boolean describeOnly = (QUERY_DESCRIBE_ONLY & flags) != 0;
     // Check parameters and resolve OIDs.
     if (!describeOnly) {
-      for (ParameterList parameterList : parameterLists) {
-        if (parameterList != null) {
-          ((V3ParameterList) parameterList).checkAllParametersSet();
+      for(int i=0; i < numQueries; i++) {
+        if (parameterLists[i] != null) {
+          ((V3ParameterList) parameterLists[i]).checkAllParametersSet();
         }
       }
     }
@@ -345,7 +349,7 @@ public class QueryExecutorImpl implements QueryExecutor {
       ErrorTrackingResultHandler trackingHandler = new ErrorTrackingResultHandler(handler);
       estimatedReceiveBufferBytes = 0;
 
-      for (int i = 0; i < queries.length; ++i) {
+      for (int i = 0; i < numQueries; ++i) {
         V3Query query = (V3Query) queries[i];
         V3ParameterList parameters = (V3ParameterList) parameterLists[i];
         if (parameters == null) {
