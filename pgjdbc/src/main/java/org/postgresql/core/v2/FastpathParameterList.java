@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,7 +32,7 @@ import java.util.List;
  */
 class FastpathParameterList implements ParameterList {
   FastpathParameterList(int paramCount) {
-    this.paramValues = new ArrayList<Object>(paramCount);
+    this.paramValues = new Object[paramCount];
   }
 
   public void registerOutParameter(int index, int sqlType) {
@@ -43,7 +44,7 @@ class FastpathParameterList implements ParameterList {
   ;
 
   public int getInParameterCount() {
-    return paramValues.size();
+    return paramValues.length;
   }
 
   public int getOutParameterCount() {
@@ -51,7 +52,7 @@ class FastpathParameterList implements ParameterList {
   }
 
   public int getParameterCount() {
-    return paramValues.size();
+    return paramValues.length;
   }
 
   public List<Integer> getTypeOIDs() {
@@ -59,10 +60,10 @@ class FastpathParameterList implements ParameterList {
   }
 
   public void setIntParameter(int index, int value) throws SQLException {
-    if (index < 1 || index > paramValues.size()) {
+    if (index < 1 || index > paramValues.length) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.size()}),
+              new Object[]{index, paramValues.length}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
@@ -72,7 +73,7 @@ class FastpathParameterList implements ParameterList {
     data[1] = (byte) (value >> 16);
     data[0] = (byte) (value >> 24);
 
-    paramValues.set(index - 1, data);
+    paramValues[index - 1]= data;
   }
 
   public void setLiteralParameter(int index, String value, int oid) throws SQLException {
@@ -81,40 +82,40 @@ class FastpathParameterList implements ParameterList {
   }
 
   public void setStringParameter(int index, String value, int oid) throws SQLException {
-    paramValues.set(index - 1, value);
+    paramValues[index - 1]=  value;
   }
 
   public void setBytea(int index, byte[] data, int offset, int length) throws SQLException {
-    if (index < 1 || index > paramValues.size()) {
+    if (index < 1 || index > paramValues.length) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.size()}),
+              new Object[]{index, paramValues.length}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues.set(index - 1, new StreamWrapper(data, offset, length));
+    paramValues[index - 1]= new StreamWrapper(data, offset, length);
   }
 
   public void setBytea(int index, final InputStream stream, final int length) throws SQLException {
-    if (index < 1 || index > paramValues.size()) {
+    if (index < 1 || index > paramValues.length) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.size()}),
+              new Object[]{index, paramValues.length}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues.set(index - 1, new StreamWrapper(stream, length));
+    paramValues[index - 1]= new StreamWrapper(stream, length);
   }
 
   public void setBytea(int index, InputStream stream) throws SQLException {
-    if (index < 1 || index > paramValues.size()) {
+    if (index < 1 || index > paramValues.length) {
       throw new PSQLException(
           GT.tr("The column index is out of range: {0}, number of columns: {1}.",
-              new Object[]{index, paramValues.size()}),
+              new Object[]{index, paramValues.length}),
           PSQLState.INVALID_PARAMETER_VALUE);
     }
 
-    paramValues.set(index - 1, new StreamWrapper(stream));
+    paramValues[index - 1]= new StreamWrapper(stream);
   }
 
   public void setNull(int index, int oid) throws SQLException {
@@ -122,7 +123,7 @@ class FastpathParameterList implements ParameterList {
   }
 
   public String toString(int index) {
-    if (index < 1 || index > paramValues.size()) {
+    if (index < 1 || index > paramValues.length) {
       throw new IllegalArgumentException("parameter " + index + " out of range");
     }
 
@@ -142,16 +143,16 @@ class FastpathParameterList implements ParameterList {
   void writeV2FastpathValue(int index, PGStream pgStream) throws IOException {
     --index;
 
-    if (paramValues.get(index) instanceof StreamWrapper) {
-      StreamWrapper wrapper = (StreamWrapper) paramValues.get(index);
+    if (paramValues[index] instanceof StreamWrapper) {
+      StreamWrapper wrapper = (StreamWrapper) paramValues[index];
       pgStream.SendInteger4(wrapper.getLength());
       copyStream(pgStream, wrapper);
-    } else if (paramValues.get(index) instanceof byte[]) {
-      byte[] data = (byte[]) paramValues.get(index);
+    } else if (paramValues[index] instanceof byte[]) {
+      byte[] data = (byte[]) paramValues[index];
       pgStream.SendInteger4(data.length);
       pgStream.Send(data);
-    } else if (paramValues.get(index) instanceof String) {
-      byte[] data = pgStream.getEncoding().encode((String) paramValues.get(index));
+    } else if (paramValues[index] instanceof String) {
+      byte[] data = pgStream.getEncoding().encode((String) paramValues[index]);
       pgStream.SendInteger4(data.length);
       pgStream.Send(data);
     } else {
@@ -160,8 +161,8 @@ class FastpathParameterList implements ParameterList {
   }
 
   void checkAllParametersSet() throws SQLException {
-    for (int i = 0; i < paramValues.size(); i++) {
-      if (paramValues.get(i) == null) {
+    for (int i = 0; i < paramValues.length; i++) {
+      if (paramValues[i] == null) {
         throw new PSQLException(GT.tr("No value specified for parameter {0}.", i + 1),
             PSQLState.INVALID_PARAMETER_VALUE);
       }
@@ -169,23 +170,24 @@ class FastpathParameterList implements ParameterList {
   }
 
   public ParameterList copy() {
-    FastpathParameterList newCopy = new FastpathParameterList(paramValues.size());
-    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.size());
+    FastpathParameterList newCopy = new FastpathParameterList(paramValues.length);
+    System.arraycopy(paramValues, 0, newCopy.paramValues, 0, paramValues.length);
     return newCopy;
   }
 
   public void clear() {
-    paramValues.clear();
+//    paramValues.clear();
+      Arrays.fill(paramValues, null);
   }
 
   public void setBinaryParameter(int index, byte[] value, int oid) {
     throw new UnsupportedOperationException();
   }
 
-  private final List<Object> paramValues;
+  private Object[] paramValues;
 
   @Override
-  public List<Object> getValues() {
+  public Object[] getValues() {
     return this.paramValues;
   }
 
@@ -195,7 +197,8 @@ class FastpathParameterList implements ParameterList {
       // only v2.SimpleParameterList is compatible with this type
       SimpleParameterList spl = (SimpleParameterList) list;
       clear();
-      paramValues.addAll(spl.getValues());
+//      paramValues.addAll(spl.getValues());
+      paramValues = new Object[list.getValues().length];
     }
   }
 
@@ -204,7 +207,8 @@ class FastpathParameterList implements ParameterList {
    * Append parameters to the list.
    */
   public void addAll(ParameterList list) {
-    paramValues.addAll(list.getValues());
+//    paramValues.addAll(list.getValues());
+      paramValues = new Object[paramValues.length + list.getValues().length];
   }
 
   @Override

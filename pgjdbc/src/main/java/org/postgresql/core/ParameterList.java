@@ -189,7 +189,7 @@ public interface ParameterList {
    * Returns the bound parameter values.
    * @return Object array containing the parameter values.
    */
-  List<Object> getValues();
+  Object[] getValues();
 
   /**
    * Shrink the size of the list

@@ -166,7 +166,7 @@ class CompositeParameterList implements V3ParameterList {
   }
 
   @Override
-  public List<Object> getValues() {
+  public Object[] getValues() {
     return null; // unsupported
   }
 

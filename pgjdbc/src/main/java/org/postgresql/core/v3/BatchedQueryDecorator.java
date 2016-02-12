@@ -233,7 +233,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     int c = super.getNativeQuery().bindPositions.length;
     int bs = getBatchSize();
-    StringBuilder s = new StringBuilder().append(super.getNativeSql());
+    String ns = super.getNativeSql();
+    // ',' '$' * bs-1 + '(' ')' * bs-1  
+    int l = ns.length() + (((c * 2) - 1) * (bs -1)) + ((bs - 1) * 3 );
+    // numbers
+    
+    StringBuilder s = new StringBuilder(l).append(ns);
     for (int i = 2; i <= bs; i += 1) {
       s.append(",");
       int initial = ((i - 1) * c) + 1;
