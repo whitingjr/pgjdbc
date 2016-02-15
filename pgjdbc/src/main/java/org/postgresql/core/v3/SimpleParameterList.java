@@ -54,7 +54,7 @@ class SimpleParameterList implements V3ParameterList {
       flags, List<byte[]> encoded, ProtocolConnectionImpl protoConnection) {
 //    this.paramValues = new ArrayList<Object>(values.size());
 //    this.paramValues.addAll(values);
-    this.paramValues= values;
+    System.arraycopy(values, 0, paramValues, 0, values.length);
     this.paramTypes = new ArrayList<Integer>(types.size());
     this.paramTypes.addAll(types);
     this.flags = new ArrayList<Byte>(flags.size());
@@ -365,7 +365,10 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public ParameterList copy() {
-    return new SimpleParameterList(paramValues, paramTypes, flags, encoded, protoConnection);
+//    return new SimpleParameterList(paramValues, paramTypes, flags, encoded, protoConnection);
+     SimpleParameterList spl = new SimpleParameterList(paramValues.length, protoConnection);
+     System.arraycopy( paramValues, 0, spl.paramValues, paramValues.length );
+     return spl;
   }
 
   public void clear() {
