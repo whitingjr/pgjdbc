@@ -93,7 +93,7 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public int getParameterCount() {
-    return paramTypes.length;
+    return paramTypes.size();
   }
 
   public int getOutParameterCount() {
