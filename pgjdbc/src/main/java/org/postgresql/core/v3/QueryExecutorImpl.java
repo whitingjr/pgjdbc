@@ -1365,7 +1365,8 @@ public class QueryExecutorImpl implements QueryExecutor {
     // + 2 (param value count) + N (encoded param value size)
     // + 2 (result format code count, 0)
     long encodedSize = 0;
-    for (int i = 1; i <= params.getParameterCount(); ++i) {
+    int p = params.getParameterCount();
+    for (int i = 1; i <= p; ++i) {
       if (params.isNull(i)) {
         encodedSize += 4;
       } else {
@@ -1391,7 +1392,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     encodedSize = 4
         + (encodedPortalName == null ? 0 : encodedPortalName.length) + 1
         + (encodedStatementName == null ? 0 : encodedStatementName.length) + 1
-        + 2 + params.getParameterCount() * 2
+        + 2 + p * 2
         + 2 + encodedSize
         + 2 + numBinaryFields * 2;
 
@@ -1418,12 +1419,13 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
     pgStream.SendChar(0); // End of statement name.
 
-    pgStream.SendInteger2(params.getParameterCount()); // # of parameter format codes
-    for (int i = 1; i <= params.getParameterCount(); ++i) {
+    pgStream.SendInteger2(p); // # of parameter format codes
+    for (int i = 1; i <= p; ++i) {
+//    for (int i = 1; i <= params.getParameterCount(); ++i) {
       pgStream.SendInteger2(params.isBinary(i) ? 1 : 0); // Parameter format code
     }
 
-    pgStream.SendInteger2(params.getParameterCount()); // # of parameter values
+    pgStream.SendInteger2(p); // # of parameter values
 
     // If an error occurs when reading a stream we have to
     // continue pumping out data to match the length we
@@ -1434,7 +1436,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     //
     PGBindException bindException = null;
 
-    for (int i = 1; i <= params.getParameterCount(); ++i) {
+    for (int i = 1; i <= p; ++i) {
       if (params.isNull(i)) {
         pgStream.SendInteger4(-1); // Magic size of -1 means NULL
       } else {

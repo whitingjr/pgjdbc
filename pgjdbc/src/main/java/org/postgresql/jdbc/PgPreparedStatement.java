@@ -1704,6 +1704,13 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
       int bp = bqd.getNativeQuery().bindPositions.length;
       preparedParameters.shrink(bp);
     }
+    for (int i = 0; i < batchStatementsSize; i += 1) {
+       batchStatements[i] = null;
+    }
+    int l = batchParameters.length;
+    for (int i = 0; i < l ; i += 1) {
+       batchParameters[i] = null;
+    }
     return outcome;
   }
 }

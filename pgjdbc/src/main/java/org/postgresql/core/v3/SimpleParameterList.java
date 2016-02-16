@@ -54,6 +54,7 @@ class SimpleParameterList implements V3ParameterList {
       flags, List<byte[]> encoded, ProtocolConnectionImpl protoConnection) {
 //    this.paramValues = new ArrayList<Object>(values.size());
 //    this.paramValues.addAll(values);
+    paramValues = new Object[values.length];
     System.arraycopy(values, 0, paramValues, 0, values.length);
     this.paramTypes = new ArrayList<Integer>(types.size());
     this.paramTypes.addAll(types);
@@ -92,7 +93,7 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public int getParameterCount() {
-    return paramValues.length;
+    return paramTypes.length;
   }
 
   public int getOutParameterCount() {
@@ -365,10 +366,7 @@ class SimpleParameterList implements V3ParameterList {
   }
 
   public ParameterList copy() {
-//    return new SimpleParameterList(paramValues, paramTypes, flags, encoded, protoConnection);
-     SimpleParameterList spl = new SimpleParameterList(paramValues.length, protoConnection);
-     System.arraycopy( paramValues, 0, spl.paramValues, paramValues.length );
-     return spl;
+    return new SimpleParameterList(paramValues, paramTypes, flags, encoded, protoConnection);
   }
 
   public void clear() {
@@ -411,8 +409,6 @@ class SimpleParameterList implements V3ParameterList {
       we need to create copies of our parameters, otherwise the values can be changed */
       clear();
       SimpleParameterList spl = (SimpleParameterList) list;
-//      paramValues.addAll(spl.getValues());
-//      paramValues=spl.getValues();
       Arrays.fill( paramValues, null);
       paramTypes.addAll(spl.getParamTypes());
       flags.addAll(spl.getFlags());
@@ -427,7 +423,11 @@ class SimpleParameterList implements V3ParameterList {
       Backing collections have been sized based on parameter count. */
       SimpleParameterList spl = (SimpleParameterList) list;
 //      paramValues.addAll(spl.getValues());
-      paramValues = new Object[paramValues.length+(3*list.getValues().length)];
+      int pos = paramTypes.size();
+      if ((paramTypes.size()+spl.paramValues.length) >= paramValues.length) {
+         paramValues = Arrays.copyOf(paramValues, paramValues.length+(3*list.getValues().length));
+      }
+      System.arraycopy(spl.getValues(), 0 , paramValues, pos, spl.paramValues.length);
       paramTypes.addAll(spl.getParamTypes());
       flags.addAll(spl.getFlags());
       encoded.addAll(spl.getEncoding());
