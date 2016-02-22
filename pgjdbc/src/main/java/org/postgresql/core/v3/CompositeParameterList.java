@@ -175,7 +175,7 @@ class CompositeParameterList implements V3ParameterList {
   }
 
   @Override
-  public void appendAll(ParameterList list) {
+  public void appendAll(ParameterList list) throws SQLException {
     // no-op, unsupported
   }
 

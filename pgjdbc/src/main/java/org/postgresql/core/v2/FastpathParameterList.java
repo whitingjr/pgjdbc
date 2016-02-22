@@ -196,7 +196,7 @@ class FastpathParameterList implements ParameterList {
     if (list instanceof SimpleParameterList ) {
       // only v2.SimpleParameterList is compatible with this type
       SimpleParameterList spl = (SimpleParameterList) list;
-      Arrays.fill(paramValues, null);
+      clear();
       System.arraycopy(spl.getValues(), 0, paramValues, 0,
           spl.getInParameterCount());
     }
@@ -206,7 +206,7 @@ class FastpathParameterList implements ParameterList {
   /**
    * Append parameters to the list.
    */
-  public void appendAll(ParameterList list) {
+  public void appendAll(ParameterList list) throws SQLException {
     if (list instanceof SimpleParameterList ) {
       // only v2.SimpleParameterList is compatible with this type
       SimpleParameterList spl = (SimpleParameterList) list;

@@ -1122,12 +1122,12 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
       batchParameters = new ArrayList<ParameterList>();
     }
     if (reWriteBatchedInserts && preparedQuery.query.isStatementReWritableInsert()) {
+      // we need to create copies of our parameters, otherwise the values can be changed
+      batchParameters.add(preparedParameters.copy());
       if (batchStatements.size() == 0) {
         batchStatements.add(preparedQuery.query);
-        // we need to create copies of our parameters, otherwise the values can be changed
-        batchParameters.add(preparedParameters.copy());
       } else {
-        reWrite(batchStatements, batchParameters, preparedParameters);
+        increment(batchStatements, preparedParameters);
       }
     } else {
       // we need to create copies of our parameters, otherwise the values can be changed
@@ -1669,13 +1669,10 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
    * @param batchParameters all the parameters
    * @param preparedParameters all the prepared parameters
    */
-  private void reWrite(List<Query> batchStatements,
-      List<ParameterList> batchParameters, ParameterList preparedParameters) {
+  private void increment(List<Query> batchStatements, ParameterList preparedParameters) {
     Query prior = batchStatements.get(batchStatements.size() - 1);
     BatchedQueryDecorator decoratedQuery = (BatchedQueryDecorator)prior;
     decoratedQuery.incrementBatchSize();
-
-    batchParameters.add(preparedParameters);
 
     // resize and populate .fields and .preparedTypes meta data
     int[] userTypeInformation = preparedParameters.getTypeOIDs();
@@ -1686,14 +1683,17 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
   }
 
   @Override
-   protected ParameterList[] transformParameters() {
-     //TODO: override if re-write
-     return super.transformParameters();
-   }
-
-  @Override
-   protected Query[] transformQueries() {
-     //TODO: override if re-write
-     return super.transformQueries();
-   }
+  protected ParameterList[] transformParameters() throws SQLException {
+    if (reWriteBatchedInserts && preparedQuery.query.isStatementReWritableInsert() && batchParameters.size() > 1) {
+       int s = batchParameters.size() * batchParameters.get(0).getInParameterCount();
+       ParameterList[] pla = new ParameterList[1];
+       pla[0] = ((BatchedQueryDecorator)batchStatements.get(0)).createParameterList();
+       for (ParameterList pl : batchParameters) {
+         pla[0].appendAll(pl);
+       }
+       return pla;
+    } else {
+      return super.transformParameters();
+    }
+  }
 }

@@ -233,7 +233,7 @@ class SimpleParameterList implements ParameterList {
   /**
    * Append parameters to the list.
    */
-  public void appendAll(ParameterList list) {
+  public void appendAll(ParameterList list) throws SQLException {
     if (list instanceof SimpleParameterList ) {
       /* only v2.SimpleParameterList is compatible with this type. The list
       of parameters is expected to already be cloned from the values
