@@ -110,7 +110,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
       types = fill(expected);
     }
     if (before != types.length) {
-       setStatementTypes(types);
+      setStatementTypes(types);
     }
     return types;
   }

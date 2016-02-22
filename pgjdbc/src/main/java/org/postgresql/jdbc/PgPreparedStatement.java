@@ -1685,13 +1685,13 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
   @Override
   protected ParameterList[] transformParameters() throws SQLException {
     if (reWriteBatchedInserts && preparedQuery.query.isStatementReWritableInsert() && batchParameters.size() > 1) {
-       int s = batchParameters.size() * batchParameters.get(0).getInParameterCount();
-       ParameterList[] pla = new ParameterList[1];
-       pla[0] = ((BatchedQueryDecorator)batchStatements.get(0)).createParameterList();
-       for (ParameterList pl : batchParameters) {
-         pla[0].appendAll(pl);
-       }
-       return pla;
+      int s = batchParameters.size() * batchParameters.get(0).getInParameterCount();
+      ParameterList[] pla = new ParameterList[1];
+      pla[0] = ((BatchedQueryDecorator)batchStatements.get(0)).createParameterList();
+      for (ParameterList pl : batchParameters) {
+        pla[0].appendAll(pl);
+      }
+      return pla;
     } else {
       return super.transformParameters();
     }

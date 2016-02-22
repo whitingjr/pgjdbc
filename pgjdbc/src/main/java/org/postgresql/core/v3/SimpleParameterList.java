@@ -81,7 +81,7 @@ class SimpleParameterList implements V3ParameterList {
     }
 
     paramTypes[index] = oid;
-    pos=index+1;
+    pos = index + 1;
   }
 
   public int getParameterCount() {
@@ -363,7 +363,7 @@ class SimpleParameterList implements V3ParameterList {
     Arrays.fill(paramTypes, 0);
     Arrays.fill(encoded, null);
     Arrays.fill(flags, (byte) 0);
-    pos=0;
+    pos = 0;
   }
 
   public SimpleParameterList[] getSubparams() {
@@ -412,10 +412,10 @@ class SimpleParameterList implements V3ParameterList {
       we need to create copies of our parameters, otherwise the values can be changed */
       SimpleParameterList spl = (SimpleParameterList) list;
       if ((pos + spl.getInParameterCount()) > paramValues.length) {
-         throw new PSQLException(
-               GT.tr("Added parameters index out of range: {0}, number of columns: {1}.",
-                   new Object[]{(pos + spl.getInParameterCount()), paramValues.length}),
-               PSQLState.INVALID_PARAMETER_VALUE);
+        throw new PSQLException(
+          GT.tr("Added parameters index out of range: {0}, number of columns: {1}.",
+            new Object[]{(pos + spl.getInParameterCount()), paramValues.length}),
+              PSQLState.INVALID_PARAMETER_VALUE);
       }
       System.arraycopy(spl.getValues(), 0, this.paramValues, pos, spl.getInParameterCount());
       System.arraycopy(spl.getParamTypes(), 0, this.paramTypes, pos, spl.getInParameterCount());
