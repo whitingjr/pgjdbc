@@ -1675,21 +1675,25 @@ class PgPreparedStatement extends PgStatement implements PreparedStatement {
     BatchedQueryDecorator decoratedQuery = (BatchedQueryDecorator)prior;
     decoratedQuery.incrementBatchSize();
 
-    // create a new paramlist that is sized correctly
-    ParameterList replacement = decoratedQuery.createParameterList();
-    ParameterList old = (ParameterList)batchParameters.remove(batchParameters.size() - 1);
-    replacement.addAll(old);
-    replacement.appendAll(preparedParameters);
-    batchParameters.add(replacement);
+    batchParameters.add(preparedParameters);
 
     // resize and populate .fields and .preparedTypes meta data
-    int singleBatchparamCount = replacement.getParameterCount() / decoratedQuery.getBatchSize();
-
     int[] userTypeInformation = preparedParameters.getTypeOIDs();
     if (userTypeInformation != null && userTypeInformation.length > 0
-        && userTypeInformation.length == singleBatchparamCount) {
+        && userTypeInformation.length == decoratedQuery.getNativeQuery().bindPositions.length) {
       decoratedQuery.setStatementTypes(userTypeInformation);
     }
   }
 
+  @Override
+   protected ParameterList[] transformParameters() {
+     //TODO: override if re-write
+     return super.transformParameters();
+   }
+
+  @Override
+   protected Query[] transformQueries() {
+     //TODO: override if re-write
+     return super.transformQueries();
+   }
 }

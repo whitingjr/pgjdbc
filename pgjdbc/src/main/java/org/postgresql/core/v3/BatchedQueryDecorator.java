@@ -100,14 +100,18 @@ public class BatchedQueryDecorator extends SimpleQuery {
     // provide types depending on batch size, which may vary
     int expected = getBindPositions();
     int[] types = super.getStatementTypes();
+    int before = 0;
 
     if (types == null) {
       types = fill(expected);
     }
     if (types.length < expected) {
+      before = types.length;
       types = fill(expected);
     }
-    setStatementTypes(types);
+    if (before != types.length) {
+       setStatementTypes(types);
+    }
     return types;
   }
 
