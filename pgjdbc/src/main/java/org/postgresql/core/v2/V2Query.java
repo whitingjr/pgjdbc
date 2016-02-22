@@ -60,7 +60,6 @@ class V2Query implements Query {
     return nativeQuery.nativeSql.isEmpty();
   }
 
-  @Override
   public boolean isStatementReWritableInsert() {
     return statementReWritableInsert;
   }
@@ -69,12 +68,10 @@ class V2Query implements Query {
     statementReWritableInsert = canReWrite;
   }
 
-  @Override
   public void incrementBatchSize() {
     batchSize += 1;
   }
 
-  @Override
   public int getBatchSize() {
     return batchSize;
   }

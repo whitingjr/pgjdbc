@@ -172,17 +172,10 @@ public interface ParameterList {
   String toString(int index);
 
   /**
-   * Overwrite current parameters with parameters in the provided list.
-   * Current parameters are cleared.
-   * @param list of parameters to overwrite with.
-   */
-  void addAll(ParameterList list);
-
-  /**
    * Use this operation to append more parameters to the current list.
    * @param list of parameters to append with.
    */
-  void appendAll(ParameterList list);
+  void appendAll(ParameterList list) throws SQLException ;
 
   /**
    * Returns the bound parameter values.
