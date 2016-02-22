@@ -55,6 +55,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
   public void reset() {
     super.setStatementTypes(originalPreparedTypes);
     resetBatchedCount();
+    length = 0;
   }
 
   @Override
@@ -100,14 +101,18 @@ public class BatchedQueryDecorator extends SimpleQuery {
     // provide types depending on batch size, which may vary
     int expected = getBindPositions();
     int[] types = super.getStatementTypes();
+    int before = 0;
 
     if (types == null) {
       types = fill(expected);
     }
     if (types.length < expected) {
+      before = types.length;
       types = fill(expected);
     }
-    setStatementTypes(types);
+    if (before != types.length) {
+      setStatementTypes(types);
+    }
     return types;
   }
 
@@ -216,19 +221,20 @@ public class BatchedQueryDecorator extends SimpleQuery {
 
   @Override
   String getNativeSql() {
-    // dynamically rebuild sql with parameters for each batch
+    // dynamically build sql with parameters for each batch
     if (super.getNativeSql() == null) {
       return "";
     }
     int c = super.getNativeQuery().bindPositions.length;
     int bs = getBatchSize();
-    StringBuilder s = new StringBuilder().append(super.getNativeSql());
+    calculateLength(super.getNativeSql().length(), c, bs - 1 );
+    StringBuilder s = new StringBuilder(length).append(super.getNativeSql());
     for (int i = 2; i <= bs; i += 1) {
-      s.append(",");
-      int initial = ((i - 1) * c) + 1;
-      s.append("($").append(initial);
-      for (int p = 1; p < c; p += 1) {
-        s.append(",$").append(initial + p);
+      int pos = ((i - 1) * c) + 1;
+      s.append(",($").append(pos);
+      int ceiling = pos + c;
+      for (pos += 1 ; pos < ceiling; pos += 1) {
+        s.append(",$").append(pos);
       }
       s.append(")");
     }
@@ -239,4 +245,44 @@ public class BatchedQueryDecorator extends SimpleQuery {
   public String toString() {
     return getNativeSql();
   }
+
+  /**
+   * Calculate the size of the statement. To avoid repeated calls to
+   * AbstractStringBuilder.expandCapacity(...) and Arrays.copyOf
+   * @param init int Length of sql supplied by user
+   * @param p int Number of parameters in a batch
+   * @param remaining int Remaining batches to process
+   * @return int Size of generated sql
+   */
+  int calculateLength(int init, int p, int remaining) {
+    int count = (p * remaining); // dollar, commar, remaining parameters
+    length = init + (2 * remaining) + count + count; // initial, brackets, dollar, comma
+    remainingParams = count;
+    calculate(999999999, 10, p);
+    calculate(99999999, 9, p);
+    calculate(9999999, 8, p);
+    calculate(999999, 7, p);
+    calculate(99999, 6, p);
+    calculate(9999, 5, p);
+    calculate(999, 4, p);
+    calculate(99, 3, p);
+    calculate(9, 2, p);
+    calculate(0, 1, p);
+    return length;
+  }
+
+  private void calculate(int boundary, int numberLength, int p) {
+    if ((remainingParams + p) > boundary) {
+      int nextRangeParamCount = 0;
+      if (p < (boundary + 1)) {
+        nextRangeParamCount = boundary - p;
+      }
+      int params = remainingParams - nextRangeParamCount;
+      length += params * numberLength;
+      remainingParams -= params;
+    }
+  }
+
+  private int remainingParams = 0;
+  private int length = 0;
 }

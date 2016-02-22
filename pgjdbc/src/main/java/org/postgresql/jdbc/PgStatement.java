@@ -943,8 +943,7 @@ public class PgStatement implements Statement, BaseStatement {
 
     // Construct query/parameter arrays.
     Query[] queries = batchStatements.toArray(new Query[batchStatements.size()]);
-    ParameterList[] parameterLists =
-        batchParameters.toArray(new ParameterList[batchParameters.size()]);
+    ParameterList[] parameterLists = transformParameters();
     batchStatements.clear();
     batchParameters.clear();
 
@@ -1432,5 +1431,9 @@ public class PgStatement implements Statement, BaseStatement {
 
   private void setReWriteBatchedInserts(boolean enabled) {
     reWriteBatchedInserts = enabled;
+  }
+
+  protected ParameterList[] transformParameters() throws SQLException {
+    return batchParameters.toArray(new ParameterList[batchParameters.size()]);
   }
 }
