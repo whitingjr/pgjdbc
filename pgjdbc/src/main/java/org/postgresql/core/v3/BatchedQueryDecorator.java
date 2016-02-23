@@ -226,7 +226,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     int c = super.getNativeQuery().bindPositions.length;
     int bs = getBatchSize();
-    int l = getSize(super.getNativeSql().length(), c, bs);
+    int l = getSize(super.getNativeSql().length(), c, bs -1 );
     StringBuilder s = new StringBuilder(l).append(super.getNativeSql());
     for (int i = 2; i <= bs; i += 1) {
       s.append(",");
@@ -245,9 +245,10 @@ public class BatchedQueryDecorator extends SimpleQuery {
     return getNativeSql();
   }
 
-  private int getSize(int init, int p, int batchCount) {
+  private int getSize(int init, int p, int remaining) {
     int size = init;
-    int total = (p * (batchCount - 1)); // assuming native sql has a whole batch
+    int total = p * remaining; // assuming native sql has a whole batch
+    size += (2 * remaining) + remaining + ((p - 1) * remaining) + total; // adding space for '(' ')' ',' '$'
     if (total > 999999999) {
       int params = Integer.MAX_VALUE - 999999999;
       size += (params * 10);

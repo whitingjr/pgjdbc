@@ -501,7 +501,7 @@ public class DeepBatchedInsertStatementTest extends TestCase {
   /* Set up the fixture for this testcase: a connection to a database with
   a table for this test. */
   protected void setUp() throws Exception {
-    Properties props = new Properties();
+    Properties props = new Properties(System.getProperties());
     props.setProperty(PGProperty.REWRITE_BATCHED_INSERTS.getName(),
         Boolean.TRUE.toString());
     props.setProperty(PGProperty.PREPARE_THRESHOLD.getName(), "1");
