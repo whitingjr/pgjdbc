@@ -226,7 +226,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
     }
     int c = super.getNativeQuery().bindPositions.length;
     int bs = getBatchSize();
-    StringBuilder s = new StringBuilder().append(super.getNativeSql());
+    int l = getSize(super.getNativeSql().length(), c, bs);
+    StringBuilder s = new StringBuilder(l).append(super.getNativeSql());
     for (int i = 2; i <= bs; i += 1) {
       s.append(",");
       int initial = ((i - 1) * c) + 1;
@@ -242,5 +243,59 @@ public class BatchedQueryDecorator extends SimpleQuery {
   @Override
   public String toString() {
     return getNativeSql();
+  }
+
+  private int getSize(int init, int p, int batchCount) {
+    int size = init;
+    int total = (p * (batchCount - 1)); // assuming native sql has a whole batch
+    if (total > 999999999) {
+      int params = Integer.MAX_VALUE - 999999999;
+      size += (params * 10);
+      total -= params;
+    }
+    if (total > 99999999) {
+      int params = total - 99999999;
+      size += (params * 9);
+      total -= params;
+    }
+    if (total > 9999999) {
+      int params = total - 9999999;
+      size += (params * 8);
+      total -= params;
+    }
+    if (total > 999999) {
+      int params = total - 999999;
+      size += (params * 7);
+      total -= params;
+    }
+    if (total > 99999) {
+      int params = total - 99999;
+      size += (params * 6);
+      total -= params;
+    }
+    if (total > 9999) {
+      int params = total - 9999;
+      size += (params * 5);
+      total -= params;
+    }
+    if (total > 999) {
+      int params = total - 999;
+      size += (params * 4);
+      total -= params;
+    }
+    if (total > 99) {
+      int params = total - 99;
+      size += (params * 3);
+      total -= params;
+    }
+    if (total > 9) {
+      int params = total - 9;
+      size += (params * 2);
+      total -= params;
+    }
+    if (total > 0) {
+      size += total;
+    }
+    return size;
   }
 }
