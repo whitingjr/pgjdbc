@@ -248,7 +248,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
   private int getSize(int init, int p, int remaining) {
     int size = init;
     int total = p * remaining; // assuming native sql has a whole batch
-    size += (2 * remaining) + remaining + ((p - 1) * remaining) + total; // adding space for '(' ')' ',' '$'
+    int brackets = (2 * remaining);
+    int commas = remaining + ((p - 1) * remaining);
+    int dollars = total;
+    size += brackets + commas + dollars;
+//    size += (2 * remaining) + remaining + ((p - 1) * remaining) + total; // adding space for '(' ')' ',' '$'
     if (total > 999999999) {
       int params = Integer.MAX_VALUE - 999999999;
       size += (params * 10);
