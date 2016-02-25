@@ -403,122 +403,122 @@ public class DeepBatchedInsertStatementTest extends TestCase {
   }
 
   public void testNativeSqlSizeCalculation() throws SQLException {
-     PreparedStatement pstmt = null;
-     try {
-       /*
-        * The connection is configured so the batch rewrite optimization is
-        * enabled. See setUp()
-        */
-       pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
+    PreparedStatement pstmt = null;
+    try {
+      /*
+       * The connection is configured so the batch rewrite optimization is
+       * enabled. See setUp()
+       */
+      pstmt = con.prepareStatement("INSERT INTO testbatch VALUES (?,?)");
 
-       int initParamCount = 2;
-       ClassLoader cl = this.getClass().getClassLoader();
-       Class pgps = Class.forName("org.postgresql.jdbc.PgPreparedStatement",
-           true, cl);
+      int initParamCount = 2;
+      ClassLoader cl = this.getClass().getClassLoader();
+      Class pgps = Class.forName("org.postgresql.jdbc.PgPreparedStatement",
+          true, cl);
 
-       pstmt.setInt(1, 1);
-       pstmt.setInt(2, 2);
-       pstmt.addBatch();
-       pstmt.setInt(1, 3);
-       pstmt.setInt(2, 4);
-       pstmt.addBatch();
+      pstmt.setInt(1, 1);
+      pstmt.setInt(2, 2);
+      pstmt.addBatch();
+      pstmt.setInt(1, 3);
+      pstmt.setInt(2, 4);
+      pstmt.addBatch();
 
-       Field f = pgps.getDeclaredField("preparedQuery");
-       assertNotNull(f);
-       f.setAccessible(true);
-       Object fObjectCachedQuery = f.get(pstmt);
-       assertNotNull(fObjectCachedQuery);
-       assertTrue(fObjectCachedQuery instanceof CachedQuery);
-       Field fQuery = CachedQuery.class.getDeclaredField("query");
-       assertNotNull(fObjectCachedQuery);
-       fQuery.setAccessible(true);
-       Object fObjectQuery = fQuery.get(fObjectCachedQuery);
-       assertTrue(fObjectQuery instanceof BatchedQueryDecorator);
-       BatchedQueryDecorator bqd = (BatchedQueryDecorator) fObjectQuery;
-       Method mgetSize = bqd.getClass().getDeclaredMethod("getSize", Integer.TYPE, Integer.TYPE, Integer.TYPE);
-       mgetSize.setAccessible(true);
-       Object sObject = mgetSize.invoke(bqd, 10, 2, 1);
-       assertNotNull(sObject);
-       Integer size = (Integer) sObject;
-       int brackets = 2;
-       int commas = 2;
-       int dollars = 2;
-       int digits = 2;
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 9, 1);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2;
-       commas = 9;
-       dollars = 9;
-       digits = 9;
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 10, 1);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2;
-       commas = 9 + 1;
-       dollars = 10;
-       digits = 11;
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 19, 1);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2;
-       commas = 19;
-       dollars = 19;
-       digits = 9 + (2 * 10);
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 2, 18);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2 * 18;
-       commas = 18 + 18;
-       dollars = 36;
-       digits = 9 + ((36 - 9) * 2);
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 2, 999);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2 * 999;
-       commas = 999 + 999;
-       dollars = 999 * 2;
-       digits = 9 + ((99 - 9) * 2) + ((999 - 99) * 3) + ((1998 - 999) * 4);
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 2, 9998);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2 * 9998;
-       commas = 9998 + 9998;
-       dollars = 9998 * 2;
-       digits = 9 + ((99 - 9) * 2) + ((999 - 99) * 3) + ((9999 - 999) * 4) + ((19996 - 9999) * 5);
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-       sObject = mgetSize.invoke(bqd, 10, 3, 99);
-       assertNotNull(sObject);
-       size = (Integer) sObject;
-       brackets = 2 * 99;
-       commas = (2 * 99) + 99;
-       dollars = 99 * 3;
-       digits = 9 + ((99 - 9) * 2) + ((297 - 99) * 3) ;
-       assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
-     } catch (SQLException sqle) {
-       fail("Failed to execute three statements added to a batch. Reason:"
-           + sqle.getMessage());
-     } catch (Exception e) {
-       if (e.getCause() == null) {
-         fail(String.format(e.getClass().getName() + " thrown:[%1$s]",
-           e.getMessage()));
-       } else {
+      Field f = pgps.getDeclaredField("preparedQuery");
+      assertNotNull(f);
+      f.setAccessible(true);
+      Object fObjectCachedQuery = f.get(pstmt);
+      assertNotNull(fObjectCachedQuery);
+      assertTrue(fObjectCachedQuery instanceof CachedQuery);
+      Field fQuery = CachedQuery.class.getDeclaredField("query");
+      assertNotNull(fObjectCachedQuery);
+      fQuery.setAccessible(true);
+      Object fObjectQuery = fQuery.get(fObjectCachedQuery);
+      assertTrue(fObjectQuery instanceof BatchedQueryDecorator);
+      BatchedQueryDecorator bqd = (BatchedQueryDecorator) fObjectQuery;
+      Method mgetSize = bqd.getClass().getDeclaredMethod("getSize", Integer.TYPE, Integer.TYPE, Integer.TYPE);
+      mgetSize.setAccessible(true);
+      Object sObject = mgetSize.invoke(bqd, 10, 2, 1);
+      assertNotNull(sObject);
+      Integer size = (Integer) sObject;
+      int brackets = 2;
+      int commas = 2;
+      int dollars = 2;
+      int digits = 2;
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 9, 1);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2;
+      commas = 9;
+      dollars = 9;
+      digits = 9;
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 10, 1);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2;
+      commas = 9 + 1;
+      dollars = 10;
+      digits = 11;
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 19, 1);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2;
+      commas = 19;
+      dollars = 19;
+      digits = 9 + (2 * 10);
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 2, 18);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2 * 18;
+      commas = 18 + 18;
+      dollars = 36;
+      digits = 9 + ((36 - 9) * 2);
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 2, 999);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2 * 999;
+      commas = 999 + 999;
+      dollars = 999 * 2;
+      digits = 9 + ((99 - 9) * 2) + ((999 - 99) * 3) + ((1998 - 999) * 4);
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 2, 9998);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2 * 9998;
+      commas = 9998 + 9998;
+      dollars = 9998 * 2;
+      digits = 9 + ((99 - 9) * 2) + ((999 - 99) * 3) + ((9999 - 999) * 4) + ((19996 - 9999) * 5);
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+      sObject = mgetSize.invoke(bqd, 10, 3, 99);
+      assertNotNull(sObject);
+      size = (Integer) sObject;
+      brackets = 2 * 99;
+      commas = (2 * 99) + 99;
+      dollars = 99 * 3;
+      digits = 9 + ((99 - 9) * 2) + ((297 - 99) * 3) ;
+      assertEquals(10 + brackets + commas + dollars + digits, size.intValue());
+    } catch (SQLException sqle) {
+      fail("Failed to execute three statements added to a batch. Reason:"
+          + sqle.getMessage());
+    } catch (Exception e) {
+      if (e.getCause() == null) {
+        fail(String.format(e.getClass().getName() + " thrown:[%1$s]",
+            e.getMessage()));
+      } else {
         fail(String.format(e.getClass().getName()
-           + " thrown:[%1$s] cause [%2$s]", e.getMessage(), e.getCause()
-           .getMessage()));
-       }
-     } finally {
-       if (null != pstmt) {
-         pstmt.close();
-       }
-       con.rollback();
-     }
+            + " thrown:[%1$s] cause [%2$s]", e.getMessage(), e.getCause()
+            .getMessage()));
+      }
+    } finally {
+      if (null != pstmt) {
+        pstmt.close();
+      }
+      con.rollback();
+    }
   }
 
   public DeepBatchedInsertStatementTest(String name) {

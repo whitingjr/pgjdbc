@@ -220,13 +220,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
 
   @Override
   String getNativeSql() {
-    // dynamically rebuild sql with parameters for each batch
+    // dynamically build sql with parameters for each batch
     if (super.getNativeSql() == null) {
       return "";
     }
     int c = super.getNativeQuery().bindPositions.length;
     int bs = getBatchSize();
-    int l = getSize(super.getNativeSql().length(), c, bs -1 );
+    int l = getSize(super.getNativeSql().length(), c, bs - 1 );
     StringBuilder s = new StringBuilder(l).append(super.getNativeSql());
     for (int i = 2; i <= bs; i += 1) {
       s.append(",");
@@ -245,14 +245,19 @@ public class BatchedQueryDecorator extends SimpleQuery {
     return getNativeSql();
   }
 
+  /**
+   * Calculate the size of the statement
+   * @param init int Length of sql supplied by user
+   * @param p int Number of parameters in a batch
+   * @param remaining int Remaining batches to process
+   * @return int Size of generated sql
+   */
   private int getSize(int init, int p, int remaining) {
     int size = init;
     int total = p * remaining; // assuming native sql has a whole batch
-    int brackets = (2 * remaining);
-    int commas = remaining + ((p - 1) * remaining);
-    int dollars = total;
-    size += brackets + commas + dollars;
-//    size += (2 * remaining) + remaining + ((p - 1) * remaining) + total; // adding space for '(' ')' ',' '$'
+    size += (2 * remaining); // bracket
+    size += remaining + ((p - 1) * remaining); // parameter comma
+    size += total; // dollar
     if (total > 999999999) {
       int params = Integer.MAX_VALUE - 999999999;
       size += (params * 10);
