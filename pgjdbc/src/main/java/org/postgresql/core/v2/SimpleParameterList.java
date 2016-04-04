@@ -236,7 +236,7 @@ class SimpleParameterList implements ParameterList {
     StringBuilder ts = new StringBuilder("<[");
     if (paramValues.length > 0) {
       ts.append(toString(1));
-      for (int c = 2; c <= paramValues.length; c += 1) {
+      for (int c = 2; c <= paramValues.length; c++) {
         ts.append(" ,").append(toString(c));
       }
     }

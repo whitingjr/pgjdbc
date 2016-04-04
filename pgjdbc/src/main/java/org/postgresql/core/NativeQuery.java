@@ -79,7 +79,7 @@ public class NativeQuery {
     return index < BIND_NAMES.length ? BIND_NAMES[index] : "$" + index;
   }
 
-  public static int bindsCount() {
+  public static int bindCount() {
     return BIND_NAMES.length;
   }
 }

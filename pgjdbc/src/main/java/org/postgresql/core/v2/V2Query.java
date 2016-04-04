@@ -69,7 +69,7 @@ class V2Query implements Query {
   }
 
   public void incrementBatchSize() {
-    batchSize += 1;
+    batchSize++;
   }
 
   public int getBatchSize() {

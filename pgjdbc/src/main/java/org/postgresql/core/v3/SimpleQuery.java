@@ -264,7 +264,7 @@ class SimpleQuery implements V3Query {
   }
 
   public void incrementBatchSize() {
-    batchedCount += 1;
+    batchedCount++;
   }
 
   public void resetBatchedCount() {

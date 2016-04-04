@@ -368,13 +368,13 @@ public class DeepBatchedInsertStatementTest extends BaseTest {
   private int getSqlStringLength(int nativeSize, int paramCount, int remainingBatches) {
     StringBuilder sql = new StringBuilder();
     int param = paramCount;
-    for (int i = 0 ; i < nativeSize; i += 1) {
+    for (int i = 0 ; i < nativeSize; i++ ) {
       sql.append("*");
     }
-    for (int c = 0; c < remainingBatches; c += 1) {
+    for (int c = 0; c < remainingBatches; c++) {
       sql.append(",($");
       sql.append(Integer.toString(++param));
-      for (int p = 1; p < paramCount; p += 1) {
+      for (int p = 1; p < paramCount; p++) {
         sql.append(",$");
         sql.append(Integer.toString(++param));
       }

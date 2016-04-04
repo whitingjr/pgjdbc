@@ -1040,7 +1040,7 @@ public class PgStatement implements Statement, BaseStatement {
            * indicate successful completion for each row the driver client added
            * to the batch.
            */
-          for (int i = 0; i < batchSize; i += 1 ) {
+          for (int i = 0; i < batchSize; i++ ) {
             updateCounts[i] = Statement.SUCCESS_NO_INFO;
           }
           bqd.reset();

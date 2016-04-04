@@ -118,7 +118,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
 
   private int[] fill(int expected) {
     int[] types = Arrays.copyOf(originalPreparedTypes, expected);
-    for (int row = 1; row < getBatchSize(); row += 1) {
+    for (int row = 1; row < getBatchSize(); row++) {
       System.arraycopy(originalPreparedTypes, 0, types, row
           * originalPreparedTypes.length, originalPreparedTypes.length);
     }
@@ -155,6 +155,8 @@ public class BatchedQueryDecorator extends SimpleQuery {
 
   /**
    * Detect when the vanilla prepared type meta data is out of date.
+   * Initially some types will be Oid.UNSPECIFIED. The BE will update this to the
+   * current type for the column for future reference by the FE.
    *
    * @param preparedTypes
    *          meta data to compare with
@@ -175,7 +177,7 @@ public class BatchedQueryDecorator extends SimpleQuery {
       return false;
     }
     int maxPos = originalPreparedTypes.length - 1;
-    for (int pos = 0; pos <= maxPos; pos += 1) {
+    for (int pos = 0; pos <= maxPos; pos++) {
       if (originalPreparedTypes[pos] == UNSPECIFIED
           && preparedTypes[pos] != UNSPECIFIED) {
         return true;
@@ -184,6 +186,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
     return false;
   }
 
+  /**
+   * Update field type meta data after the FE issues a ParameterDescribe to
+   * the BE. Compare current types with the types passed in.
+   * @param preparedTypes int[] the most recent preparedTypes information
+   */
   private void updateOriginal(int[] preparedTypes) {
     if (preparedTypes == null) {
       return;
@@ -219,9 +226,13 @@ public class BatchedQueryDecorator extends SimpleQuery {
     isParsed = getBindPositions();
   }
 
+  /**
+   * Method to return the sql based on number of batches. Skipping the initial
+   * batch.
+   */
   @Override
   String getNativeSql() {
-    // dynamically build sql with parameters for each batch
+    // dynamically build sql with parameters for batches
     if (super.getNativeSql() == null) {
       return "";
     }
@@ -229,11 +240,14 @@ public class BatchedQueryDecorator extends SimpleQuery {
     int bs = getBatchSize();
     calculateLength(super.getNativeSql().length(), c, bs - 1 );
     StringBuilder s = new StringBuilder(length).append(super.getNativeSql());
-    for (int i = 2; i <= bs; i += 1) {
+    /* the sql provided is expected to already have an individual batch
+     * of parameters. Skip generating sql text for the initial batch by setting
+     * i to 2.*/
+    for (int i = 2; i <= bs; i++) {
       int pos = ((i - 1) * c) + 1;
       s.append(",($").append(pos);
       int ceiling = pos + c;
-      for (pos += 1 ; pos < ceiling; pos += 1) {
+      for ( pos++ ; pos < ceiling; pos++) {
         s.append(",$").append(pos);
       }
       s.append(")");
@@ -247,8 +261,11 @@ public class BatchedQueryDecorator extends SimpleQuery {
   }
 
   /**
-   * Calculate the size of the statement. To avoid repeated calls to
+   * Calculate the text length necessary for the statement. Including brackets,
+   * dollars, commas, numbers plus the initial sql text.
+   * Do this to avoid repeated calls to
    * AbstractStringBuilder.expandCapacity(...) and Arrays.copyOf
+   *
    * @param init int Length of sql supplied by user
    * @param p int Number of parameters in a batch
    * @param remaining int Remaining batches to process
@@ -271,6 +288,12 @@ public class BatchedQueryDecorator extends SimpleQuery {
     return length;
   }
 
+  /**
+   * Calculate the length of text necessary for every number in the sql.
+   * @param boundary int the upper bound value for digit length
+   * @param numberLength int length of the digits being calculated
+   * @param p int parameters in a batch
+   */
   private void calculate(int boundary, int numberLength, int p) {
     if ((remainingParams + p) > boundary) {
       int nextRangeParamCount = 0;
