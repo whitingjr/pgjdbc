@@ -135,31 +135,31 @@ public class Parser {
           break;
 
         case 'i':
-          isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, false));
+          isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i));
           break;
 
         case 'I':
-          isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i, true));
+          isCurrentReWriteCompatible = isCurrentReWriteCompatible || (Parser.parseInsertKeyword(aChars, i));
           break;
 
         case 'r':
           // exclude insert statements with returning keyword
-          isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i, false) == false);
+          isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i) == false);
           break;
 
         case 'R':
           // exclude insert statements with RETURNING keyword
-          isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i, true) == false);
+          isCurrentReWriteCompatible = isCurrentReWriteCompatible && (Parser.parseReturningKeyword(aChars, i) == false);
           break;
 
         case 'v':
-          if (Parser.parseValuesKeyword(aChars, i, false)) {
+          if (Parser.parseValuesKeyword(aChars, i)) {
             afterValuesParens = 0 ;
           }
           break;
 
         case 'V':
-          if (Parser.parseValuesKeyword(aChars, i, true)) {
+          if (Parser.parseValuesKeyword(aChars, i)) {
             afterValuesParens = 0 ;
           }
           break;
@@ -382,17 +382,17 @@ public class Parser {
    * @param isUpper is the text expected to be upper/lower case
    * @return boolean indicates presence of word
    */
-  public static boolean parseInsertKeyword(final char[] query, int offset, boolean isUpper) {
+  public static boolean parseInsertKeyword(final char[] query, int offset) {
     if (query.length < (offset + 7)) {
       return false;
     }
 
-    if (isUpper && query[offset] == 'I' && query[offset + 1] == 'N' && query[offset + 2] == 'S' && query[offset + 3] == 'E' && query[offset + 4] == 'R' && query[offset + 5] == 'T' ) {
-      return true;
-    } else if ( !isUpper &&  query[offset] == 'i' &&  query[offset + 1] == 'n' && query[offset + 2] == 's' && query[offset + 3] == 'e' && query[offset + 4] == 'r' && query[offset + 5] == 't') {
-      return true;
-    }
-    return false;
+    return Character.toUpperCase(query[offset]) == 'I'
+      && Character.toUpperCase(query[offset + 1]) == 'N'
+      && Character.toUpperCase(query[offset + 2]) == 'S'
+      && Character.toUpperCase(query[offset + 3]) == 'E'
+      && Character.toUpperCase(query[offset + 4]) == 'R'
+      && Character.toUpperCase(query[offset + 5]) == 'T';
   }
 
   /**
@@ -402,17 +402,20 @@ public class Parser {
    * @param isUpper is the text expected to be upper/lower case
    * @return boolean indicates presence of word
    */
-  public static boolean parseReturningKeyword(final char[] query, int offset, boolean isUpper) {
+  public static boolean parseReturningKeyword(final char[] query, int offset) {
     if (query.length < (offset + 9)) {
       return false;
     }
 
-    if ( isUpper && query[offset] == 'R' && query[offset + 1] == 'E' && query[offset + 2] == 'T' && query[offset + 3] == 'U' && query[offset + 4] == 'R' && query[offset + 5] == 'N' && query[offset + 6] == 'I' && query[offset + 7] == 'N' && query[offset + 8] == 'G' ) {
-      return true;
-    } else if ( !isUpper && query[offset] == 'r' && query[offset + 1] == 'e' && query[offset + 2] == 't' && query[offset + 3] == 'u' && query[offset + 4] == 'r' && query[offset + 5] == 'n' && query[offset + 6] == 'i' && query[offset + 7] == 'n' && query[offset + 8] == 'g' ) {
-      return true;
-    }
-    return false;
+    return Character.toUpperCase(query[offset]) == 'R'
+      && Character.toUpperCase(query[offset + 1]) == 'E'
+      && Character.toUpperCase(query[offset + 2]) == 'T'
+      && Character.toUpperCase(query[offset + 3]) == 'U'
+      && Character.toUpperCase(query[offset + 4]) == 'R'
+      && Character.toUpperCase(query[offset + 5]) == 'N'
+      && Character.toUpperCase(query[offset + 6]) == 'I'
+      && Character.toUpperCase(query[offset + 7]) == 'N'
+      && Character.toUpperCase(query[offset + 8]) == 'G';
   }
 
   /**
@@ -422,17 +425,17 @@ public class Parser {
    * @param isUpper is the text expected to be upper/lower case
    * @return boolean indicates presence of word
    */
-  public static boolean parseValuesKeyword(final char[] query, int offset, boolean isUpper) {
+  public static boolean parseValuesKeyword(final char[] query, int offset) {
     if (query.length < (offset + 6)) {
       return false;
     }
 
-    if ( isUpper && query[offset] == 'V' && query[offset + 1] == 'A' && query[offset + 2] == 'L' && query[offset + 3] == 'U' && query[offset + 4] == 'E' && query[offset + 5] == 'S' ) {
-      return true;
-    } else if ( !isUpper && query[offset] == 'v' && query[offset + 1] == 'a' && query[offset + 2] == 'l' && query[offset + 3] == 'u' && query[offset + 4] == 'e' && query[offset + 5] == 's' ) {
-      return true;
-    }
-    return false;
+    return Character.toUpperCase(query[offset]) == 'V'
+      && Character.toUpperCase(query[offset + 1]) == 'A'
+      && Character.toUpperCase(query[offset + 2]) == 'L'
+      && Character.toUpperCase(query[offset + 3]) == 'U'
+      && Character.toUpperCase(query[offset + 4]) == 'E'
+      && Character.toUpperCase(query[offset + 5]) == 'S';
   }
 
   /**
