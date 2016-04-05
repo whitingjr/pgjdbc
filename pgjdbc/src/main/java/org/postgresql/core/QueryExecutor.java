@@ -165,7 +165,7 @@ public interface QueryExecutor {
    * @param sql the SQL for the query to create
    * @return a new Query object
    */
-  Query createSimpleQuery(String sql);
+  Query createSimpleQuery(String sql, boolean autocommit);
 
   /**
    * Create a parameterized Query object suitable for execution by this QueryExecutor. The provided
@@ -176,7 +176,7 @@ public interface QueryExecutor {
    * @param sql the SQL for the query to create, with '?' placeholders for parameters.
    * @return a new Query object
    */
-  Query createParameterizedQuery(String sql); // Parsed for parameter placeholders ('?')
+  Query createParameterizedQuery(String sql, boolean autocommit); // Parsed for parameter placeholders ('?')
 
   /**
    * Prior to attempting to retrieve notifications, we need to pull any recently received
