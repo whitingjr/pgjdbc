@@ -19,9 +19,7 @@ import static org.postgresql.core.DMLCommandType.INSERT;
 public class DMLCommand {
 
   public boolean isBatchedReWriteCompatible() {
-    return commandType == INSERT && batchedReWriteConfigured
-      && parsedSQLIsBatchedReWriteCompatible && !autoCommit
-      && !parsedSQLhasRETURNINGKeyword && count == 0;
+    return batchedReWriteCompatible;
   }
 
   public DMLCommandType getType() {
@@ -54,17 +52,13 @@ public class DMLCommand {
       boolean isCompatible, boolean isPresent, boolean isautocommitConfigured,
       int priorQueryCount) {
     commandType = type;
-    batchedReWriteConfigured = isBatchedReWriteConfigured;
-    parsedSQLIsBatchedReWriteCompatible = isCompatible;
     parsedSQLhasRETURNINGKeyword = isPresent;
-    autoCommit = isautocommitConfigured;
-    count = priorQueryCount;
+    batchedReWriteCompatible = (type == INSERT) && isBatchedReWriteConfigured
+        && isCompatible && !isautocommitConfigured
+        && !isPresent && priorQueryCount == 0;
   }
 
   private final DMLCommandType commandType;
-  private final boolean batchedReWriteConfigured;
-  private final boolean parsedSQLIsBatchedReWriteCompatible;
-  private final boolean autoCommit;
   private final boolean parsedSQLhasRETURNINGKeyword;
-  private final int count;
+  private final boolean batchedReWriteCompatible;
 }
