@@ -65,7 +65,7 @@ public class Parser {
       char aChar = aChars[i];
       // ';' is ignored as it splits the queries
       whitespaceOnly &= aChar == ';' || Character.isWhitespace(aChar);
-      switch (aChar) {
+      switch (Character.toUpperCase(aChar)) {
         case '\'': // single-quotes
           i = Parser.parseSingleQuotes(aChars, i, standardConformingStrings);
           break;
@@ -145,15 +145,9 @@ public class Parser {
           }
           break;
 
-        case 'i':
-          if (Parser.parseInsertKeyword(aChars, i)) {
-            if ( !isInsertPresent && (nativeQueries == null ? true : nativeQueries.size() == 0)) {
-              isCurrentReWriteCompatible = true;
-              isInsertPresent = true;
-              current = DMLCommandType.INSERT;
-            } else {
-              isCurrentReWriteCompatible = false;
-            }
+        case 'D':
+          if (Parser.parseDeleteKeyword(aChars, i)) {
+            current = DMLCommandType.DELETE;
             i += 5;
           }
           break;
@@ -171,12 +165,10 @@ public class Parser {
           }
           break;
 
-        case 'r':
-          // exclude re-write of insert statements with returning keyword
-          isReturningPresent = Parser.parseReturningKeyword(aChars, i);
-          if (isReturningPresent) {
-            isCurrentReWriteCompatible &= !isReturningPresent;
-            i += 8;
+        case 'M':
+          if (Parser.parseMoveKeyword(aChars, i)) {
+            current = DMLCommandType.MOVE;
+            i += 3;
           }
           break;
 
@@ -184,14 +176,13 @@ public class Parser {
           // exclude re-write of insert statements with RETURNING keyword
           isReturningPresent = Parser.parseReturningKeyword(aChars, i);
           if (isReturningPresent) {
-            isCurrentReWriteCompatible &= !isReturningPresent;
             i += 8;
           }
           break;
 
-        case 'v':
-          if (Parser.parseValuesKeyword(aChars, i)) {
-            afterValuesParens = 0 ;
+        case 'U':
+          if (Parser.parseUpdateKeyword(aChars, i)) {
+            current = DMLCommandType.UPDATE;
             i += 5;
           }
           break;
@@ -419,6 +410,26 @@ public class Parser {
   }
 
   /**
+   * Parse string to check presence of DELETE keyword regardless of case.
+   * The initial character is assumed to have been matched.
+   * @param query char[] of the query statement
+   * @param offset position of query to start checking
+   * @return boolean indicates presence of word
+   */
+  public static boolean parseDeleteKeyword(final char[] query, int offset) {
+    if (query.length < (offset + 6)) {
+      return false;
+    }
+
+    return Character.toUpperCase(query[offset + 1]) == 'D'
+      && Character.toUpperCase(query[offset + 1]) == 'E'
+      && Character.toUpperCase(query[offset + 2]) == 'L'
+      && Character.toUpperCase(query[offset + 3]) == 'E'
+      && Character.toUpperCase(query[offset + 4]) == 'T'
+      && Character.toUpperCase(query[offset + 5]) == 'E';
+  }
+
+  /**
    * Parse string to check presence of INSERT keyword regardless of case.
    * @param query char[] of the query statement
    * @param offset position of query to start checking
@@ -435,6 +446,23 @@ public class Parser {
       && Character.toUpperCase(query[offset + 3]) == 'E'
       && Character.toUpperCase(query[offset + 4]) == 'R'
       && Character.toUpperCase(query[offset + 5]) == 'T';
+  }
+
+  /**
+   * Parse string to check presence of MOVE keyword regardless of case.
+   * @param query char[] of the query statement
+   * @param offset position of query to start checking
+   * @return boolean indicates presence of word
+   */
+  public static boolean parseMoveKeyword(final char[] query, int offset) {
+    if (query.length < (offset + 4)) {
+      return false;
+    }
+
+    return Character.toUpperCase(query[offset + 1]) == 'M'
+      && Character.toUpperCase(query[offset + 1]) == 'O'
+      && Character.toUpperCase(query[offset + 2]) == 'V'
+      && Character.toUpperCase(query[offset + 3]) == 'E';
   }
 
   /**
@@ -457,6 +485,25 @@ public class Parser {
       && Character.toUpperCase(query[offset + 6]) == 'I'
       && Character.toUpperCase(query[offset + 7]) == 'N'
       && Character.toUpperCase(query[offset + 8]) == 'G';
+  }
+
+  /**
+   * Parse string to check presence of UPDATE keyword regardless of case.
+   * @param query char[] of the query statement
+   * @param offset position of query to start checking
+   * @return boolean indicates presence of word
+   */
+  public static boolean parseUpdateKeyword(final char[] query, int offset) {
+    if (query.length < (offset + 6)) {
+      return false;
+    }
+
+    return Character.toUpperCase(query[offset + 1]) == 'U'
+      && Character.toUpperCase(query[offset + 1]) == 'P'
+      && Character.toUpperCase(query[offset + 2]) == 'D'
+      && Character.toUpperCase(query[offset + 3]) == 'A'
+      && Character.toUpperCase(query[offset + 4]) == 'T'
+      && Character.toUpperCase(query[offset + 5]) == 'E';
   }
 
   /**

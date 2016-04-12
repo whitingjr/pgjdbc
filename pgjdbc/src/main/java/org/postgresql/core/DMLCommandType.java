@@ -15,13 +15,17 @@ package org.postgresql.core;
  */
 
 public enum DMLCommandType {
+
   INSERT(true),
   /**
    * Use BLANK for empty sql queries or when parsing the sql string is not
    * necessary.
    */
-  BLANK(false);
-
+  BLANK(false),
+  MOVE(false),
+  UPDATE(false),
+  DELETE(false);
+  
   /* to be added when needed SELECT(false), DELETE(false), UPDATE(false),
   * COMMIT(false), ROLLBACK(false); */
 
