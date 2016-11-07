@@ -36,7 +36,9 @@ import org.postgresql.util.PGobject;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -44,6 +46,7 @@ import java.sql.ClientInfoStatus;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -197,6 +200,9 @@ public class PgConnection implements BaseConnection {
       logger.setLogLevel(logLevel);
     }
 
+    if (logLevel > 0 && DriverManager.getLogWriter() == null) {
+      DriverManager.setLogWriter(new PrintWriter(new BufferedOutputStream(System.out)));
+    }
     setDefaultFetchSize(PGProperty.DEFAULT_ROW_FETCH_SIZE.getInt(info));
 
     prepareThreshold = PGProperty.PREPARE_THRESHOLD.getInt(info);

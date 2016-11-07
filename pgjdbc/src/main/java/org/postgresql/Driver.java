@@ -13,8 +13,11 @@ import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.postgresql.util.SharedTimer;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.security.AccessController;
@@ -254,6 +257,7 @@ public class Driver implements java.sql.Driver {
       logger.debug("Error in url: " + url);
       return null;
     }
+    Driver.setLogLevel(logLevel(props));
     try {
       if (logger.logDebug()) {
         logger.debug("Connecting with URL: " + url);
@@ -708,5 +712,22 @@ public class Driver implements java.sql.Driver {
    */
   public static boolean isRegistered() {
     return registeredDriver != null;
+  }
+
+  private static int logLevel(Properties props) {
+    int level = Driver.OFF;
+    String value = props.getProperty(PGProperty.LOG_LEVEL.getName());
+    if (value != null) {
+      try {
+        level = Integer.parseInt(props.getProperty(PGProperty.LOG_LEVEL.getName()));
+      } catch (NumberFormatException nfe) {}
+    } 
+    value = props.getProperty("logLevel");
+    if (value != null) {
+      try {
+        level = Integer.parseInt(props.getProperty("logLevel"));
+      } catch (NumberFormatException nfe) {}
+    }
+    return level;
   }
 }
