@@ -45,6 +45,9 @@ class Portal implements ResultCursor {
   }
 
   void setReferenceCleanup(PhantomReference<Portal> cleanupReference, ServerResourcesCleaner<Portal> serverResourcesCleaner) {
+    if (this.cleanupReference != null){
+      close();
+    }
     this.cleanupReference = cleanupReference;
     this.portalResourcesCleaner = serverResourcesCleaner;
   }

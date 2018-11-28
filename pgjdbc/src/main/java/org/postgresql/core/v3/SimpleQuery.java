@@ -285,6 +285,9 @@ class SimpleQuery implements Query {
   }
 
   void setReferenceCleanup(PhantomReference<SimpleQuery> cleanupReference, ServerResourcesCleaner<SimpleQuery> serverResourcesCleaner) {
+    if (this.cleanupReference != null) {
+      close();
+    }
     this.cleanupReference = cleanupReference;
     this.simpleQueryResourcesCleaner = serverResourcesCleaner;
   }
